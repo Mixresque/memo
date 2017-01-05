@@ -3,6 +3,6 @@
 *.obj
 *.inc
 *.lib
-/include
-/lib
+/include/
+/lib/
 
