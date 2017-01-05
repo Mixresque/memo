@@ -3,7 +3,6 @@
 *.obj
 *.inc
 *.lib
-include/RESOURCE.H
-include/bldlibs.bat
-include/incs.txt
-lib/qeicon.vbs
+/include
+/lib
+

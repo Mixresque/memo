@@ -2,12 +2,13 @@
 .model flat,stdcall
 option casemap:none
 
-   include include/windows.inc
-   include include/user32.inc
-   include include/kernel32.inc
+   include windows.inc
+   include user32.inc
+   include kernel32.inc
+   include winextra.inc
    
-   includelib lib/user32.lib
-   includelib lib/kernel32.lib
+   includelib user32.lib
+   includelib kernel32.lib
 
 
 WinMain proto :DWORD,:DWORD,:DWORD,:DWORD

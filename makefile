@@ -9,7 +9,7 @@ AssemblerOption = -c -coff
 
 ResourceCompiler = D:\masm32\bin\rc.exe
 
-Linker = D:\masm32\bin\link.exe
+Linker = D:\masm32\bin\link32.exe
 LinkOption = -subsystem:windows -OUT:$(OUTPUT)
 
 # Targets Rule
