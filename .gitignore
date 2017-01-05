@@ -1,8 +1,6 @@
 *.exe
 *.lst
 *.obj
-*.inc
-*.lib
 /include/
 /lib/
 
