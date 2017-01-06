@@ -1,11 +1,13 @@
 include <stdafx.inc>
 include <image.inc>
 include <paint.inc>
+include <timer.inc>
 
 public MEMO_SIZE
 public MEMO_BGND
 public BRUSH_TYPE
 public BRUSH_SIZE
+public ALARM_COUNT
 
 _WinMain proto
 
@@ -17,6 +19,7 @@ MEMO_BGND dd MEMO_BGND_1     ; default memo background color is yellow
 BRUSH_TYPE dd BRUSH_BLACK    ; default brush type is black pen
 BRUSH_SIZE dd BRUSH_MIDDLE   ; default brush size is middle
 MOUSE_STATUS db 0 ; mouse status initialized as up
+ALARM_COUNT dd 1 ; timer never sounds when ALARM_COUNT equals 1
 
 .data?
 hInstance dd ?
@@ -25,7 +28,6 @@ hMenu dd ?
 hPPMenu dd ?
 hWinEdit dd ?
 OldWndProc dd ?
-SystemTimeAlarm SYSTEMTIME <?,?,?,?,?,?,?,?>
 
 .const
 
@@ -73,44 +75,44 @@ _CreatePPMenu proc
   local @hPopMenu5: HMENU
 
   invoke CreatePopupMenu  
-  mov @hPopMenu0,eax  
+  mov @hPopMenu0, eax  
 
   invoke CreatePopupMenu
   mov @hPopMenu1, eax
   invoke CreatePopupMenu  
-  mov @hPopMenu2,eax  
+  mov @hPopMenu2, eax  
   invoke CreatePopupMenu  
-  mov @hPopMenu3,eax  
+  mov @hPopMenu3, eax  
   invoke CreatePopupMenu  
-  mov @hPopMenu4,eax  
+  mov @hPopMenu4, eax  
   invoke CreatePopupMenu  
-  mov @hPopMenu5,eax  
+  mov @hPopMenu5, eax  
 
-  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu1,offset szMenuTimerChoice
-  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu2,offset szMenuMemosize
-  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu3,offset szMenuBgnd
-  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu4,offset szMenuBrush
-  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu5,offset szMenuBshsize
+  invoke AppendMenu, @hPopMenu0, MF_POPUP, @hPopMenu1, offset szMenuTimerChoice
+  invoke AppendMenu, @hPopMenu0, MF_POPUP, @hPopMenu2, offset szMenuMemosize
+  invoke AppendMenu, @hPopMenu0, MF_POPUP, @hPopMenu3, offset szMenuBgnd
+  invoke AppendMenu, @hPopMenu0, MF_POPUP, @hPopMenu4, offset szMenuBrush
+  invoke AppendMenu, @hPopMenu0, MF_POPUP, @hPopMenu5, offset szMenuBshsize
 
   invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERCLOCK, offset szMenuTimerClock
   invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERSECOND, offset szMenuTimerSecond
   invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERMINUTE, offset szMenuTimerMinute
   invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERHOUR, offset szMenuTimerHour
-  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_MEMOSIZEMINI,offset szMenuMemosizeMini
-  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_MEMOSIZESMALL,offset szMenuMemosizeSmall
-  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_MEMOSIZEBIG,offset szMenuMemosizeBig
-  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_MEMOSIZEGIANT,offset szMenuMemosizeGiant
-  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND1,offset szMenuBgndYellow
-  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND2,offset szMenuBgndWhite
-  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND3,offset szMenuBgndPink
-  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND4,offset szMenuBgndGreen
-  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND5,offset szMenuBgndBlue
-  invoke  AppendMenu,@hPopMenu4,MF_BYCOMMAND,IDM_BRUSHERASER,offset szMenuBrushEraser
-  invoke  AppendMenu,@hPopMenu4,MF_BYCOMMAND,IDM_BRUSHBLACK,offset szMenuBrushBlack
-  invoke  AppendMenu,@hPopMenu4,MF_BYCOMMAND,IDM_BRUSHRED,offset szMenuBrushRed
-  invoke  AppendMenu,@hPopMenu5,MF_BYCOMMAND,IDM_BSHSIZESMALL,offset szMenuBshsizeSmall
-  invoke  AppendMenu,@hPopMenu5,MF_BYCOMMAND,IDM_BSHSIZEMIDDLE,offset szMenuBshsizeMiddle
-  invoke  AppendMenu,@hPopMenu5,MF_BYCOMMAND,IDM_BSHSIZEBIG,offset szMenuBshsizeBig
+  invoke  AppendMenu, @hPopMenu2, MF_BYCOMMAND, IDM_MEMOSIZEMINI, offset szMenuMemosizeMini
+  invoke  AppendMenu, @hPopMenu2, MF_BYCOMMAND, IDM_MEMOSIZESMALL, offset szMenuMemosizeSmall
+  invoke  AppendMenu, @hPopMenu2, MF_BYCOMMAND, IDM_MEMOSIZEBIG, offset szMenuMemosizeBig
+  invoke  AppendMenu, @hPopMenu2, MF_BYCOMMAND, IDM_MEMOSIZEGIANT, offset szMenuMemosizeGiant
+  invoke  AppendMenu, @hPopMenu3, MF_BYCOMMAND, IDM_BGND1, offset szMenuBgndYellow
+  invoke  AppendMenu, @hPopMenu3, MF_BYCOMMAND, IDM_BGND2, offset szMenuBgndWhite
+  invoke  AppendMenu, @hPopMenu3, MF_BYCOMMAND, IDM_BGND3, offset szMenuBgndPink
+  invoke  AppendMenu, @hPopMenu3, MF_BYCOMMAND, IDM_BGND4, offset szMenuBgndGreen
+  invoke  AppendMenu, @hPopMenu3, MF_BYCOMMAND, IDM_BGND5, offset szMenuBgndBlue
+  invoke  AppendMenu, @hPopMenu4, MF_BYCOMMAND, IDM_BRUSHERASER, offset szMenuBrushEraser
+  invoke  AppendMenu, @hPopMenu4, MF_BYCOMMAND, IDM_BRUSHBLACK, offset szMenuBrushBlack
+  invoke  AppendMenu, @hPopMenu4, MF_BYCOMMAND, IDM_BRUSHRED, offset szMenuBrushRed
+  invoke  AppendMenu, @hPopMenu5, MF_BYCOMMAND, IDM_BSHSIZESMALL, offset szMenuBshsizeSmall
+  invoke  AppendMenu, @hPopMenu5, MF_BYCOMMAND, IDM_BSHSIZEMIDDLE, offset szMenuBshsizeMiddle
+  invoke  AppendMenu, @hPopMenu5, MF_BYCOMMAND, IDM_BSHSIZEBIG, offset szMenuBshsizeBig
 
   push @hPopMenu0
   pop eax  
@@ -119,22 +121,22 @@ _CreatePPMenu endp
 
 ; _ProcWndEdit proc hWnd, uMsg, wParam, lParam
 ;   .if uMsg == WM_CHAR
-;     invoke CallWindowProc,OldWndProc,hWinEdit,uMsg,wParam,lParam
+;     invoke CallWindowProc, OldWndProc, hWinEdit, uMsg, wParam, lParam
 ;   .elseif uMsg == WM_KEYDOWN
-;       mov eax,wParam
+;       mov eax, wParam
 ;       .if al==VK_RETURN
-;           ;invoke MessageBox,hWinEdit,addr Message,addr AppName,MB_OK+MB_ICONINFORMATION
+;           ;invoke MessageBox, hWinEdit, addr Message, addr AppName, MB_OK+MB_ICONINFORMATION
 ;           ;===============此处应修改光标位置=============
-;           ;invoke CallWindowProc,hWinEdit,hWinEdit,WM_CHAR,0
-;           invoke SetFocus,hWinEdit
-;           ;invoke CallWindowProc,OldWndProc,hWinEdit,WM_CHAR,0DH,lParam
+;           ;invoke CallWindowProc, hWinEdit, hWinEdit, WM_CHAR, 0
+;           invoke SetFocus, hWinEdit
+;           ;invoke CallWindowProc, OldWndProc, hWinEdit, WM_CHAR, 0DH, lParam
 ;       .else
-;           invoke CallWindowProc,OldWndProc,hWinEdit,uMsg,wParam,lParam
+;           invoke CallWindowProc, OldWndProc, hWinEdit, uMsg, wParam, lParam
 ;       .endif
 ;   .else
-;       invoke CallWindowProc,OldWndProc,hWinEdit,uMsg,wParam,lParam
+;       invoke CallWindowProc, OldWndProc, hWinEdit, uMsg, wParam, lParam
 ;   .endif
-;   xor eax,eax
+;   xor eax, eax
 ;   ret
 ; _ProcWndEdit endp
 
@@ -149,22 +151,22 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
   local @stPaintStruct: PAINTSTRUCT
   local @stPosMouse: POINT  
   local @SystemTimeInitial: SYSTEMTIME
+  local @SystemTimeRequired: SYSTEMTIME
   local @stRect: RECT
   local @hPPMenu
   local @hDC
   local @hDCBgnd
+  local @dTimer
 
-  mov eax,uMsg
+  mov eax, uMsg
   .if eax == WM_CREATE
     ; create text area	        
-    ; invoke CreateWindowEx,WS_EX_CLIENTEDGE,addr szEditClass,NULL,\
-    ;        	WS_CHILD+WS_VISIBLE+WS_BORDER+ES_MULTILINE,0,20,600,580,hWnd,NULL,\
-    ;         	hInstance,NULL
-    ; mov hWinEdit,eax
-    ; invoke SetFocus,eax
+    ; invoke CreateWindowEx, WS_EX_CLIENTEDGE, addr szEditClass, NULL, \
+    ;        	WS_CHILD+WS_VISIBLE+WS_BORDER+ES_MULTILINE, 0, 20, 600, 580, hWnd, NULL, \
+    ;         	hInstance, NULL
+    ; mov hWinEdit, eax
+    ; invoke SetFocus, eax
     
-
-
   .elseif eax == WM_PAINT
     ; initialize memo
     invoke BeginPaint, hWnd, addr @stPaintStruct
@@ -179,7 +181,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     invoke BitBlt, @hDC, 30, 0, MEMO_SIZE, 30, @hDCBgnd, 0, 0, SRCCOPY
     invoke SelectObject, @hDCBgnd, hBitmapDelete
     mov eax, MEMO_SIZE
-    sub eax, 34
+    sub eax, 30
     invoke BitBlt, @hDC, eax, 0, 30, 30, @hDCBgnd, 0, 0, SRCCOPY
     invoke SelectObject, @hDCBgnd, hBitmapBgnd
     invoke BitBlt, @hDC, 0, 30, MEMO_SIZE, MEMO_SIZE, @hDCBgnd, 0, 0, SRCCOPY
@@ -206,19 +208,15 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
       .if ecx >= eax
         invoke SendMessage, hWnd, WM_COMMAND, IDM_DELETE, 0
       .elseif ecx <= 30
-        invoke SendMessage,hWnd,WM_COMMAND,IDM_NEWMEMO,0
+        invoke SendMessage, hWnd, WM_COMMAND, IDM_NEWMEMO, 0
       .else
-        invoke UpdateWindow,hWnd ;即时刷新 
+        invoke UpdateWindow, hWnd ;即时刷新 
         invoke ReleaseCapture  
-        invoke SendMessage,hWnd,WM_NCLBUTTONDOWN,HTCAPTION,0
+        invoke SendMessage, hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0
       .endif
     .else
       mov MOUSE_STATUS, 1
     .endif
-
-
-
-
 
   .elseif eax == WM_LBUTTONUP
   mov MOUSE_STATUS, 0
@@ -236,8 +234,6 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
       sub edx, @stRect.top
       invoke _Paint, @hDC, ecx, edx
     .endif
-
-
 
   .elseif eax == WM_COMMAND
     .if wParam == IDM_NEWMEMO
@@ -355,22 +351,21 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
       mov BRUSH_SIZE, BRUSH_BIG
 
     .elseif wParam == IDM_TIMERCLOCK
-      invoke GetLocalTime, addr @SystemTimeInitial
-
+      call _SetTimerClock
     .elseif wParam == IDM_TIMERSECOND
-      invoke GetLocalTime, addr @SystemTimeInitial
-
+      mov @dTimer, 5
+      invoke _SetTimerSecond, @dTimer
     .elseif wParam == IDM_TIMERMINUTE
-      invoke GetLocalTime, addr @SystemTimeInitial
-
+      mov @dTimer, 5
+      invoke _SetTimerMinute, @dTimer
     .elseif wParam == IDM_TIMERHOUR
-      invoke GetLocalTime, addr @SystemTimeInitial
-
+      mov @dTimer, 5
+      invoke _SetTimerHour, @dTimer
     .endif
 
   .elseif eax == WM_CLOSE  
-    invoke DestroyWindow,hWinMain  
-    invoke PostQuitMessage,NULL  
+    invoke DestroyWindow, hWinMain  
+    invoke PostQuitMessage, NULL  
 
   .else
     invoke DefWindowProc, hWnd, uMsg, wParam, lParam
@@ -404,9 +399,9 @@ _WinMain proc
   
   invoke RegisterClassEx, addr @stWndClass
   ; create a client edged window
-  invoke CreateWindowEx, WS_EX_CLIENTEDGE, addr szClassName,\
-                         addr szCaptionMain, WS_SYSMENU or WS_POPUP,\
-                         0, 0, MEMO_SIZE, MEMO_SIZE, NULL,\
+  invoke CreateWindowEx, WS_EX_APPWINDOW, addr szClassName, \
+                         addr szCaptionMain, WS_POPUP, \
+                         0, 0, MEMO_SIZE, MEMO_SIZE, NULL, \
                          hMenu, hInstance, NULL
   mov hWinMain, eax ; mark hWinMain as the main window
   

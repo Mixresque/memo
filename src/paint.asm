@@ -44,6 +44,19 @@ _Paint proc uses eax ebx ecx edx hDC:dword, dwX:dword, dwY:dword
   add edx, edx
   inc edx
   mov ecx, edx
+
+  ; mov esi, offset bCanvas
+  ; mov edi, offset bCanvas
+  ; add esi, eax
+  ; push eax
+  ; push edx
+  ; mov dx, 592
+  ; mul dx
+  ; add edi, eax
+  ; pop edx
+  ; pop eax
+
+
   .while ecx > 0
     push ecx
     mov ecx, edx
@@ -54,6 +67,7 @@ _Paint proc uses eax ebx ecx edx hDC:dword, dwX:dword, dwY:dword
       push ecx
       push edx
       invoke SetPixel, hDC, eax, ebx, @dwBrushColor
+      ; mov 
       pop edx
       pop ecx
       pop ebx

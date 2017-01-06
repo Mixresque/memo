@@ -1,6 +1,6 @@
 # Build
 OUTPUT = main.exe
-OBJS = main.obj image.obj paint.obj
+OBJS = main.obj image.obj paint.obj timer.obj
 # Configuration
 SrcPath = src
 
