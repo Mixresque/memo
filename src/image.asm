@@ -133,7 +133,6 @@ _ImagesPreload proc
   invoke LoadImage, NULL, addr szBitmapDrag5, IMAGE_BITMAP, 532, 30, LR_LOADFROMFILE
   mov hBitmapDrag5, eax
   invoke LoadImage, NULL, addr szIcon, IMAGE_ICON, 16, 16, LR_LOADFROMFILE
-
   mov hIcon, eax
   ret
 _ImagesPreload endp

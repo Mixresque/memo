@@ -31,16 +31,16 @@ pii PROCESS_INFORMATION <>
 
 .data?
 hInstance dd ?
-hWinMain dd ?
+hWndMain dd ?
 hMenu dd ?
 hPPMenu dd ?
-hWinEdit dd ?
+hWndEdit dd ?
 OldWndProc dd ?
 
 .const
 
 
-; szEditClass db 'editing', 0
+szEditClass db 'EDIT', 0
 
 ; menu choice
 szMenuTimerChoice db '定时提醒', 0
@@ -70,7 +70,6 @@ szMenuBshsizeBig db '大笔刷', 0
 
 szClassName db 'MainWindow', 0
 szCaptionMain db 'MEMO', 0
-szAlarmPudding db 'msc\\pudding.wav', 0
 szFork db 'main.exe', 0
 
 .code
@@ -129,33 +128,27 @@ _CreatePPMenu proc
   ret  
 _CreatePPMenu endp  
 
-; _ProcWndEdit proc hWnd, uMsg, wParam, lParam
-;   .if uMsg == WM_CHAR
-;     invoke CallWindowProc, OldWndProc, hWinEdit, uMsg, wParam, lParam
-;   .elseif uMsg == WM_KEYDOWN
-;       mov eax, wParam
-;       .if al==VK_RETURN
-;           ;invoke MessageBox, hWinEdit, addr Message, addr AppName, MB_OK+MB_ICONINFORMATION
-;           ;===============此处应修改光标位置=============
-;           ;invoke CallWindowProc, hWinEdit, hWinEdit, WM_CHAR, 0
-;           invoke SetFocus, hWinEdit
-;           ;invoke CallWindowProc, OldWndProc, hWinEdit, WM_CHAR, 0DH, lParam
-;       .else
-;           invoke CallWindowProc, OldWndProc, hWinEdit, uMsg, wParam, lParam
-;       .endif
-;   .else
-;       invoke CallWindowProc, OldWndProc, hWinEdit, uMsg, wParam, lParam
-;   .endif
-;   xor eax, eax
-;   ret
-; _ProcWndEdit endp
-
-
-_ProcTimer proc hWnd, uMsg, idEvent, dwTime
-  ; check alarm clock every 100ms
-  
+_ProcWndEdit proc hWnd, uMsg, wParam, lParam
+  ; local @stPaintStruct: PAINTSTRUCT
+  ; local @hDC
+  ; local @hDCBgnd
+  ; .if uMsg == WM_CREATE
+  ;   invoke BeginPaint, hWnd, addr @stPaintStruct
+  ;   mov @hDC, eax
+  ;   invoke CreateCompatibleDC, @hDC
+  ;   mov @hDCBgnd, eax ; Background DC
+  ;   invoke SelectObject, @hDCBgnd, hBitmapBgnd
+  ;   mov eax, MEMO_SIZE
+  ;   sub eax, 30
+  ;   invoke BitBlt, @hDC, 0, 0, MEMO_SIZE, eax, @hDCBgnd, 0, 0, SRCCOPY
+  ;   invoke DeleteDC, @hDCBgnd
+  ; .endif
+  xor eax, eax
   ret
-_ProcTimer endp
+_ProcWndEdit endp
+
+
+
 
 _ProcWndMain proc hWnd, uMsg, wParam, lParam
   local @stPaintStruct: PAINTSTRUCT
@@ -170,12 +163,6 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
 
   mov eax, uMsg
   .if eax == WM_CREATE
-    ; create text area	        
-    ; invoke CreateWindowEx, WS_EX_CLIENTEDGE, addr szEditClass, NULL, \
-    ;        	WS_CHILD+WS_VISIBLE+WS_BORDER+ES_MULTILINE, 0, 20, 600, 580, hWnd, NULL, \
-    ;         	hInstance, NULL
-    ; mov hWinEdit, eax
-    ; invoke SetFocus, eax
     
   .elseif eax == WM_PAINT
     ; initialize memo
@@ -183,7 +170,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     mov @hDC, eax
 
     invoke CreateCompatibleDC, @hDC
-    mov @hDCBgnd, eax ; Background DC
+    mov @hDCBgnd, eax
 
     invoke SelectObject, @hDCBgnd, hBitmapAdd
     invoke BitBlt, @hDC, 0, 0, 30, 30, @hDCBgnd, 0, 0, SRCCOPY
@@ -215,10 +202,22 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     .if edx <= 30
       mov eax, MEMO_SIZE
       sub eax, 30
-      .if ecx >= eax
+      .if ecx > eax
         invoke SendMessage, hWnd, WM_COMMAND, IDM_DELETE, 0
-      .elseif ecx <= 30
+      .elseif ecx < 30
         invoke SendMessage, hWnd, WM_COMMAND, IDM_NEWMEMO, 0
+      .elseif ecx < 60
+        ; create text area
+        invoke GetWindowRect, hWnd, addr @stRect
+        mov eax, MEMO_SIZE
+        sub eax, 20
+        mov ebx, @stRect.top
+        add ebx, 30
+        invoke CreateWindowEx, WS_EX_APPWINDOW, addr szEditClass, NULL, \
+                WS_CHILD+WS_VISIBLE+ES_MULTILINE, @stRect.left, ebx, MEMO_SIZE, eax, \
+                  hWnd, NULL, hInstance, NULL
+        mov hWndEdit, eax
+        invoke SetFocus, eax
       .else
         invoke UpdateWindow, hWnd ;即时刷新 
         invoke ReleaseCapture  
@@ -363,7 +362,6 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
 
     .elseif wParam == IDM_TIMERCLOCK
       call _SetTimerClock
-      invoke PlaySound, addr szAlarmPudding, 0, SND_ASYNC or SND_NODEFAULT or SND_FILENAME
     .elseif wParam == IDM_TIMERSECOND
       mov @dTimer, 5
       invoke _SetTimerSecond, @dTimer
@@ -376,7 +374,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     .endif
 
   .elseif eax == WM_CLOSE  
-    invoke DestroyWindow, hWinMain  
+    invoke DestroyWindow, hWndMain  
     invoke PostQuitMessage, NULL  
 
   .else
@@ -415,12 +413,12 @@ _WinMain proc
                          addr szCaptionMain, WS_POPUP, \
                          0, 0, MEMO_SIZE, MEMO_SIZE, NULL, \
                          hMenu, hInstance, NULL
-  mov hWinMain, eax ; mark hWinMain as the main window
+  mov hWndMain, eax ; mark hWndMain as the main window
   
-  invoke SetTimer, hWinMain, 0, 100, _ProcTimer  ; call _ProcTimer every 100ms
-  invoke UpdateWindow, hWinMain ; send WM_PRINT to hWinMain
-  invoke SendMessage, hWinMain, WM_SETICON, ICON_BIG, hIcon  ; set icon
-  invoke ShowWindow, hWinMain, SW_SHOWNORMAL ; show window in a normal way
+  invoke SetTimer, hWndMain, 0, 100, _ProcTimer  ; call _ProcTimer every 100ms
+  invoke UpdateWindow, hWndMain ; send WM_PRINT to hWndMain
+  invoke SendMessage, hWndMain, WM_SETICON, ICON_BIG, hIcon  ; set icon
+  invoke ShowWindow, hWndMain, SW_SHOWNORMAL ; show window in a normal way
   ; main loop
   .while 1
     invoke GetMessage, addr @stMsg, NULL, 0, 0
