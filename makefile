@@ -1,6 +1,6 @@
 # Build
 OUTPUT = main.exe
-OBJS = main.obj
+OBJS = main.obj image.obj
 # Configuration
 SrcPath = src
 

@@ -1,11 +1,11 @@
 include <stdafx.inc>
-
+include <image.inc>
 
 
 .data
-szBitmapBackground db 'img\\background\\1.bmp', 0
-
-MEMO_SIZE dd MEMO_SIZE_MINI  ; default MEMO size is mini
+MEMO_SIZE dd MEMO_SIZE_MINI  ; default memo size is mini
+BRUSH_TYPE dd ?  ; default brush type
+BRUSH_SIZE dd ?  ; default brush size
 
 
 .data?
@@ -18,9 +18,15 @@ hPPMenu dd ?
 
 
 
-
+; menu choice
 szClassName db 'MainWindow', 0
 szMenuNewMemo db '新建(&N)', 0
+szMenuQuit db '删除(&Q)', 0
+szMenuTimerChoice db '定时提醒(&A)', 0
+szMenuTimerClock db '某时刻(&T)', 0
+szMenuTimerSecond db '几秒后(&S)', 0
+szMenuTimerMinute db '几分钟后(&M)', 0
+szMenuTimerHour db '几小时后(&H)', 0
 szMenuMemosize db '便签大小', 0
 szMenuBgnd db '背景颜色', 0
 szMenuBrush db '笔刷类型', 0
@@ -40,10 +46,6 @@ szMenuBrushRed db '红笔', 0
 szMenuBshsizeSmall db '小笔刷', 0
 szMenuBshsizeMiddle db '普通笔刷', 0
 szMenuBshsizeBig db '大笔刷', 0
-szMenuQuit db '删除(&Q)', 0
-
-
-
 
 szCaptionMain db 'MEMO', 0
 
@@ -112,10 +114,52 @@ _ProcWinMain proc hWnd, uMsg, wParam, lParam
 
   .elseif eax == WM_COMMAND
     .if wParam == IDM_NEWMEMO
-      
-      
+
     .elseif wParam == IDM_QUIT
       invoke PostQuitMessage, 0
+
+    .elseif wParam == IDM_MEMOSIZEMINI
+    
+    .elseif wParam == IDM_MEMOSIZESMALL
+    
+    .elseif wParam == IDM_MEMOSIZEBIG
+    
+    .elseif wParam == IDM_MEMOSIZEGIANT
+    
+
+    .elseif wParam == IDM_BGND1
+    
+    .elseif wParam == IDM_BGND2
+    
+    .elseif wParam == IDM_BGND3
+    
+    .elseif wParam == IDM_BGND4
+    
+    .elseif wParam == IDM_BGND5
+    
+
+    .elseif wParam == IDM_BRUSHERASER
+    
+    .elseif wParam == IDM_BRUSHBLACK
+    
+    .elseif wParam == IDM_BRUSHRED
+    
+
+    .elseif wParam == IDM_BSHSIZESMALL
+    
+    .elseif wParam == IDM_BSHSIZEMIDDLE
+    
+    .elseif wParam == IDM_BSHSIZEBIG
+      
+
+    .elseif wParam == IDM_TIMERCLOCK
+
+    .elseif wParam == IDM_TIMERSECOND
+
+    .elseif wParam == IDM_TIMERMINUTE
+
+    .elseif wParam == IDM_TIMERHOUR
+
     .endif
 
   .elseif eax == WM_CLOSE  
@@ -134,7 +178,8 @@ _WinMain proc
   local @stWndClass: WNDCLASSEX
   local @stMsg: MSG
   local @hMenu: HMENU
-  ; local @hIcon: HICON
+  local @hMenuTimerChoice: HMENU
+  local @hIcon: HICON
 
   invoke GetModuleHandle, NULL
   mov hInstance, eax
@@ -155,12 +200,19 @@ _WinMain proc
 
   invoke CreateMenu
   mov hMenu, eax
-
   invoke LoadMenu, hInstance, IDM_MAIN
   mov @hMenu, eax
+  invoke CreatePopupMenu
+  mov @hMenuTimerChoice, eax
 
-  invoke AppendMenu, hMenu, 0, IDM_NEWMEMO, offset szMenuNewMemo
+  invoke AppendMenu, hMenu, MF_BYCOMMAND, IDM_NEWMEMO, offset szMenuNewMemo
+  invoke AppendMenu, hMenu, MF_POPUP, @hMenuTimerChoice, offset szMenuTimerChoice
   invoke AppendMenu, hMenu, 0, IDM_QUIT, offset szMenuQuit
+
+  invoke AppendMenu, @hMenuTimerChoice, MF_BYCOMMAND, IDM_TIMERCLOCK, offset szMenuTimerClock
+  invoke AppendMenu, @hMenuTimerChoice, MF_BYCOMMAND, IDM_TIMERSECOND, offset szMenuTimerSecond
+  invoke AppendMenu, @hMenuTimerChoice, MF_BYCOMMAND, IDM_TIMERMINUTE, offset szMenuTimerMinute
+  invoke AppendMenu, @hMenuTimerChoice, MF_BYCOMMAND, IDM_TIMERHOUR, offset szMenuTimerHour
   
   invoke RegisterClassEx, addr @stWndClass
   ; create a client edged window
@@ -174,7 +226,7 @@ _WinMain proc
   mov hWinMain, eax ; mark hWinMain as the main window
   invoke UpdateWindow, hWinMain ; send WM_PRINT to hWinMain
   ; set icon
-  ; invoke SendMessage, hWinMain, WM_SETICON, ICON_BIG, hIcon
+  invoke SendMessage, hWinMain, WM_SETICON, ICON_BIG, hIcon
   invoke ShowWindow, hWinMain, SW_SHOWNORMAL ; show window in a normal way
   ; main loop
   .while 1
@@ -190,6 +242,7 @@ _WinMain endp
 
 
 __main proc
+  call ImagesPreload
   invoke _WinMain
   invoke ExitProcess, 0
 __main endp
