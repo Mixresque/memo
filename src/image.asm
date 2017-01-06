@@ -8,7 +8,7 @@ public hBitmapBgnd3
 public hBitmapBgnd4
 public hBitmapBgnd5
 
-public ImagesPreload
+public _ImagesPreload
 
 .data?
 hIcon dd ?
@@ -28,20 +28,20 @@ szBitmapBgnd4 db 'img\\background\\4.bmp', 0
 szBitmapBgnd5 db 'img\\background\\5.bmp', 0
 
 .code
-ImagesPreload proc
-    invoke LoadImage, NULL, addr szBitmapBgnd1, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
-    mov hBitmapBgnd, eax ; default background color
-    mov hBitmapBgnd1, eax
-    invoke LoadImage, NULL, addr szBitmapBgnd2, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
-    mov hBitmapBgnd2, eax
-    invoke LoadImage, NULL, addr szBitmapBgnd3, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
-    mov hBitmapBgnd3, eax
-    invoke LoadImage, NULL, addr szBitmapBgnd4, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
-    mov hBitmapBgnd4, eax
-    invoke LoadImage, NULL, addr szBitmapBgnd5, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
-    mov hBitmapBgnd5, eax
-    invoke LoadImage, NULL, addr szIcon, IMAGE_ICON, 16, 16, LR_LOADFROMFILE
-    mov hIcon, eax
-    ret
-ImagesPreload endp
+_ImagesPreload proc
+  invoke LoadImage, NULL, addr szBitmapBgnd1, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
+  mov hBitmapBgnd, eax ; default background color
+  mov hBitmapBgnd1, eax
+  invoke LoadImage, NULL, addr szBitmapBgnd2, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
+  mov hBitmapBgnd2, eax
+  invoke LoadImage, NULL, addr szBitmapBgnd3, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
+  mov hBitmapBgnd3, eax
+  invoke LoadImage, NULL, addr szBitmapBgnd4, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
+  mov hBitmapBgnd4, eax
+  invoke LoadImage, NULL, addr szBitmapBgnd5, IMAGE_BITMAP, 592, 592, LR_LOADFROMFILE
+  mov hBitmapBgnd5, eax
+  invoke LoadImage, NULL, addr szIcon, IMAGE_ICON, 16, 16, LR_LOADFROMFILE
+  mov hIcon, eax
+  ret
+_ImagesPreload endp
 end

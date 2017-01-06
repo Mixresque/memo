@@ -15,13 +15,27 @@ include masm32.inc
 includelib masm32.lib
 include debug.inc
 includelib debug.lib
+include comctl32.inc
+include	comdlg32.inc
 
 
 MEMO_SIZE_MINI equ 100h  ; MEMO size as mini
 MEMO_SIZE_SMALL equ 150h  ; MEMO size as small
 MEMO_SIZE_BIG equ 200h  ; MEMO size as big
 MEMO_SIZE_GIANT equ 250h  ; MEMO size as giant
+MEMO_BGND_1 equ 1
+MEMO_BGND_2 equ 2
+MEMO_BGND_3 equ 3
+MEMO_BGND_4 equ 4
+MEMO_BGND_5 equ 5
 
+
+BRUSH_ERASER equ 0
+BRUSH_BLACK equ 1
+BRUSH_RED equ 2
+BRUSH_SMALL equ 1
+BRUSH_MIDDLE equ 2
+BRUSH_BIG equ 3
 
 IDM_NEWMEMO equ 2001h
 IDM_QUIT equ 2002h

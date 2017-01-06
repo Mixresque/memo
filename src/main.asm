@@ -1,32 +1,46 @@
 include <stdafx.inc>
 include <image.inc>
+include <paint.inc>
 
+public MEMO_SIZE
+public MEMO_BGND
+public BRUSH_TYPE
+public BRUSH_SIZE
+
+_WinMain proto
+
+; invoke MessageBox, hWnd, addr szMenuBgndPink, addr szMenuBgndYellow, MB_OK
 
 .data
 MEMO_SIZE dd MEMO_SIZE_MINI  ; default memo size is mini
-BRUSH_TYPE dd ?  ; default brush type
-BRUSH_SIZE dd ?  ; default brush size
-
+MEMO_BGND dd MEMO_BGND_1     ; default memo background color is yellow
+BRUSH_TYPE dd BRUSH_BLACK    ; default brush type is black pen
+BRUSH_SIZE dd BRUSH_MIDDLE   ; default brush size is middle
+MOUSE_STATUS db 0 ; mouse status initialized as up
 
 .data?
-hInstance dd  ?
-hWinMain dd  ?
+hInstance dd ?
+hWinMain dd ?
 hMenu dd ?
 hPPMenu dd ?
+hWinEdit dd ?
+OldWndProc dd ?
+SystemTimeAlarm SYSTEMTIME <?,?,?,?,?,?,?,?>
 
 .const
 
 
+szEditClass db 'editing', 0
 
 ; menu choice
 szClassName db 'MainWindow', 0
 szMenuNewMemo db '新建(&N)', 0
 szMenuQuit db '删除(&Q)', 0
-szMenuTimerChoice db '定时提醒(&A)', 0
-szMenuTimerClock db '某时刻(&T)', 0
-szMenuTimerSecond db '几秒后(&S)', 0
-szMenuTimerMinute db '几分钟后(&M)', 0
-szMenuTimerHour db '几小时后(&H)', 0
+szMenuTimerChoice db '定时提醒', 0
+szMenuTimerClock db '某时刻', 0
+szMenuTimerSecond db '几秒后', 0
+szMenuTimerMinute db '几分钟后', 0
+szMenuTimerHour db '几小时后', 0
 szMenuMemosize db '便签大小', 0
 szMenuBgnd db '背景颜色', 0
 szMenuBrush db '笔刷类型', 0
@@ -53,112 +67,220 @@ szCaptionMain db 'MEMO', 0
 
 ; CreatePPMenu
 _CreatePPMenu proc  
-  LOCAL @hPopMenu0
-  LOCAL @hPopMenu1
-  LOCAL @hPopMenu2
-  LOCAL @hPopMenu3
-  LOCAL @hPopMenu4
+  local @hPopMenu0: HMENU
+  local @hPopMenu1: HMENU
+  local @hPopMenu2: HMENU
+  local @hPopMenu3: HMENU
+  local @hPopMenu4: HMENU
+  local @hPopMenu5: HMENU
 
   invoke CreatePopupMenu  
   mov @hPopMenu0,eax  
 
-  invoke CreatePopupMenu  
-  mov @hPopMenu1,eax  
+  invoke CreatePopupMenu
+  mov @hPopMenu1, eax
   invoke CreatePopupMenu  
   mov @hPopMenu2,eax  
   invoke CreatePopupMenu  
   mov @hPopMenu3,eax  
   invoke CreatePopupMenu  
   mov @hPopMenu4,eax  
+  invoke CreatePopupMenu  
+  mov @hPopMenu5,eax  
 
-  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu1,offset szMenuMemosize
-  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu2,offset szMenuBgnd
-  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu3,offset szMenuBrush
-  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu4,offset szMenuBshsize
+  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu1,offset szMenuTimerChoice
+  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu2,offset szMenuMemosize
+  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu3,offset szMenuBgnd
+  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu4,offset szMenuBrush
+  invoke AppendMenu,@hPopMenu0,MF_POPUP,@hPopMenu5,offset szMenuBshsize
 
-  invoke  AppendMenu,@hPopMenu1,MF_BYCOMMAND,IDM_MEMOSIZEMINI,offset szMenuMemosizeMini
-  invoke  AppendMenu,@hPopMenu1,MF_BYCOMMAND,IDM_MEMOSIZESMALL,offset szMenuMemosizeSmall
-  invoke  AppendMenu,@hPopMenu1,MF_BYCOMMAND,IDM_MEMOSIZEBIG,offset szMenuMemosizeBig
-  invoke  AppendMenu,@hPopMenu1,MF_BYCOMMAND,IDM_MEMOSIZEGIANT,offset szMenuMemosizeGiant
-  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_BGND1,offset szMenuBgndYellow
-  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_BGND2,offset szMenuBgndWhite
-  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_BGND3,offset szMenuBgndPink
-  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_BGND4,offset szMenuBgndGreen
-  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_BGND5,offset szMenuBgndBlue
-  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BRUSHERASER,offset szMenuBrushEraser
-  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BRUSHBLACK,offset szMenuBrushBlack
-  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BRUSHRED,offset szMenuBrushRed
-  invoke  AppendMenu,@hPopMenu4,MF_BYCOMMAND,IDM_BSHSIZESMALL,offset szMenuBshsizeSmall
-  invoke  AppendMenu,@hPopMenu4,MF_BYCOMMAND,IDM_BSHSIZEMIDDLE,offset szMenuBshsizeMiddle
-  invoke  AppendMenu,@hPopMenu4,MF_BYCOMMAND,IDM_BSHSIZEBIG,offset szMenuBshsizeBig
+  invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERCLOCK, offset szMenuTimerClock
+  invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERSECOND, offset szMenuTimerSecond
+  invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERMINUTE, offset szMenuTimerMinute
+  invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERHOUR, offset szMenuTimerHour
+  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_MEMOSIZEMINI,offset szMenuMemosizeMini
+  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_MEMOSIZESMALL,offset szMenuMemosizeSmall
+  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_MEMOSIZEBIG,offset szMenuMemosizeBig
+  invoke  AppendMenu,@hPopMenu2,MF_BYCOMMAND,IDM_MEMOSIZEGIANT,offset szMenuMemosizeGiant
+  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND1,offset szMenuBgndYellow
+  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND2,offset szMenuBgndWhite
+  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND3,offset szMenuBgndPink
+  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND4,offset szMenuBgndGreen
+  invoke  AppendMenu,@hPopMenu3,MF_BYCOMMAND,IDM_BGND5,offset szMenuBgndBlue
+  invoke  AppendMenu,@hPopMenu4,MF_BYCOMMAND,IDM_BRUSHERASER,offset szMenuBrushEraser
+  invoke  AppendMenu,@hPopMenu4,MF_BYCOMMAND,IDM_BRUSHBLACK,offset szMenuBrushBlack
+  invoke  AppendMenu,@hPopMenu4,MF_BYCOMMAND,IDM_BRUSHRED,offset szMenuBrushRed
+  invoke  AppendMenu,@hPopMenu5,MF_BYCOMMAND,IDM_BSHSIZESMALL,offset szMenuBshsizeSmall
+  invoke  AppendMenu,@hPopMenu5,MF_BYCOMMAND,IDM_BSHSIZEMIDDLE,offset szMenuBshsizeMiddle
+  invoke  AppendMenu,@hPopMenu5,MF_BYCOMMAND,IDM_BSHSIZEBIG,offset szMenuBshsizeBig
 
   push @hPopMenu0
   pop eax  
   ret  
 _CreatePPMenu endp  
 
+; _ProcWndEdit proc hWnd, uMsg, wParam, lParam
+;   .if uMsg == WM_CHAR
+;     invoke CallWindowProc,OldWndProc,hWinEdit,uMsg,wParam,lParam
+;   .elseif uMsg == WM_KEYDOWN
+;       mov eax,wParam
+;       .if al==VK_RETURN
+;           ;invoke MessageBox,hWinEdit,addr Message,addr AppName,MB_OK+MB_ICONINFORMATION
+;           ;===============此处应修改光标位置=============
+;           ;invoke CallWindowProc,hWinEdit,hWinEdit,WM_CHAR,0
+;           invoke SetFocus,hWinEdit
+;           ;invoke CallWindowProc,OldWndProc,hWinEdit,WM_CHAR,0DH,lParam
+;       .else
+;           invoke CallWindowProc,OldWndProc,hWinEdit,uMsg,wParam,lParam
+;       .endif
+;   .else
+;       invoke CallWindowProc,OldWndProc,hWinEdit,uMsg,wParam,lParam
+;   .endif
+;   xor eax,eax
+;   ret
+; _ProcWndEdit endp
 
-_ProcWinMain proc hWnd, uMsg, wParam, lParam
-  local @stPos:POINT  
-  local @hPPMenu  
+
+_ProcTimer proc hWnd, uMsg, idEvent, dwTime
+  ; check alarm clock every 100ms
+  
+  ret
+_ProcTimer endp
+
+_ProcWndMain proc hWnd, uMsg, wParam, lParam
+  local @stPaintStruct: PAINTSTRUCT
+  local @stPosMouse: POINT  
+  local @SystemTimeInitial: SYSTEMTIME
+  local @stRect: RECT
+  local @hPPMenu
+  local @hDC
+  local @hDCBgnd
+
   mov eax,uMsg
   .if eax == WM_CREATE
+    ; create text area	        
+    ; invoke CreateWindowEx,WS_EX_CLIENTEDGE,addr szEditClass,NULL,\
+    ;        	WS_CHILD+WS_VISIBLE+WS_BORDER+ES_MULTILINE,0,20,600,580,hWnd,NULL,\
+    ;         	hInstance,NULL
+    ; mov hWinEdit,eax
+    ; invoke SetFocus,eax
+    
 
 
-  ; right mouse button down, pop up a menu
+  .elseif eax == WM_PAINT
+    ; initialize memo
+    invoke BeginPaint, hWnd, addr @stPaintStruct
+    mov @hDC, eax
+    invoke CreateCompatibleDC, @hDC
+    mov @hDCBgnd, eax ; Background DC
+    invoke SelectObject, @hDCBgnd, hBitmapBgnd
+    invoke BitBlt, @hDC, 0, 0, MEMO_SIZE, MEMO_SIZE, @hDCBgnd, 0, 0, SRCCOPY
+    invoke DeleteDC, @hDCBgnd
+    
+
+
+  
+
   .elseif eax == WM_RBUTTONDOWN 
+    ; right mouse button down, pop up a menu
     invoke _CreatePPMenu
-    mov @hPPMenu,eax  
-    invoke GetCursorPos,addr @stPos  
-    invoke TrackPopupMenu,@hPPMenu,TPM_LEFTALIGN,@stPos.x,@stPos.y,NULL,hWnd,NULL  
+    mov @hPPMenu, eax
+    invoke GetCursorPos, addr @stPosMouse
+    invoke TrackPopupMenu, @hPPMenu, TPM_LEFTALIGN, @stPosMouse.x, @stPosMouse.y, NULL, hWnd, NULL
+
+  .elseif eax == WM_LBUTTONDOWN 
+    mov MOUSE_STATUS, 1
+
+  .elseif eax == WM_LBUTTONUP
+  mov MOUSE_STATUS, 0
+
+  .elseif eax == WM_MOUSEMOVE
+    ; left mouse button down, draw
+    .if MOUSE_STATUS == 1
+      invoke GetCursorPos, addr @stPosMouse
+      invoke GetWindowDC, hWnd
+      mov @hDC, eax
+      invoke _Paint, @hDC, @stPosMouse.x, @stPosMouse.y
+    .endif
+
+
 
   .elseif eax == WM_COMMAND
     .if wParam == IDM_NEWMEMO
 
     .elseif wParam == IDM_QUIT
       invoke PostQuitMessage, 0
-
+ 
     .elseif wParam == IDM_MEMOSIZEMINI
-    
+      mov MEMO_SIZE, MEMO_SIZE_MINI
     .elseif wParam == IDM_MEMOSIZESMALL
-    
+      mov MEMO_SIZE, MEMO_SIZE_SMALL
     .elseif wParam == IDM_MEMOSIZEBIG
-    
+      mov MEMO_SIZE, MEMO_SIZE_BIG
     .elseif wParam == IDM_MEMOSIZEGIANT
-    
+      mov MEMO_SIZE, MEMO_SIZE_GIANT
 
     .elseif wParam == IDM_BGND1
-    
+      mov edx, hBitmapBgnd1
+      mov hBitmapBgnd, edx
+      mov MEMO_BGND, MEMO_BGND_1
+      invoke GetClientRect, hWnd, addr @stRect
+      invoke InvalidateRect, hWnd, addr @stRect, TRUE
+      invoke UpdateWindow, hWnd
     .elseif wParam == IDM_BGND2
-    
+      mov edx, hBitmapBgnd2
+      mov hBitmapBgnd, edx
+      mov MEMO_BGND, MEMO_BGND_2
+      invoke GetClientRect, hWnd, addr @stRect
+      invoke InvalidateRect, hWnd, addr @stRect, TRUE
+      invoke UpdateWindow, hWnd
     .elseif wParam == IDM_BGND3
-    
+      mov edx, hBitmapBgnd3
+      mov hBitmapBgnd, edx
+      mov MEMO_BGND, MEMO_BGND_3
+      invoke GetClientRect, hWnd, addr @stRect
+      invoke InvalidateRect, hWnd, addr @stRect, TRUE
+      invoke UpdateWindow, hWnd
     .elseif wParam == IDM_BGND4
-    
+      mov edx, hBitmapBgnd4
+      mov hBitmapBgnd, edx
+      mov MEMO_BGND, MEMO_BGND_4
+      invoke GetClientRect, hWnd, addr @stRect
+      invoke InvalidateRect, hWnd, addr @stRect, TRUE
+      invoke UpdateWindow, hWnd
     .elseif wParam == IDM_BGND5
-    
+      mov edx, hBitmapBgnd5
+      mov hBitmapBgnd, edx
+      mov MEMO_BGND, MEMO_BGND_5
+      invoke GetClientRect, hWnd, addr @stRect
+      invoke InvalidateRect, hWnd, addr @stRect, TRUE
+      invoke UpdateWindow, hWnd
 
     .elseif wParam == IDM_BRUSHERASER
-    
+      mov BRUSH_TYPE, BRUSH_ERASER
     .elseif wParam == IDM_BRUSHBLACK
-    
+      mov BRUSH_TYPE, BRUSH_BLACK    
     .elseif wParam == IDM_BRUSHRED
+      mov BRUSH_TYPE, BRUSH_RED
     
-
     .elseif wParam == IDM_BSHSIZESMALL
-    
+      mov BRUSH_SIZE, BRUSH_SMALL
     .elseif wParam == IDM_BSHSIZEMIDDLE
-    
+      mov BRUSH_SIZE, BRUSH_MIDDLE
     .elseif wParam == IDM_BSHSIZEBIG
-      
+      mov BRUSH_SIZE, BRUSH_BIG
 
     .elseif wParam == IDM_TIMERCLOCK
+      invoke GetLocalTime, addr @SystemTimeInitial
 
     .elseif wParam == IDM_TIMERSECOND
+      invoke GetLocalTime, addr @SystemTimeInitial
 
     .elseif wParam == IDM_TIMERMINUTE
+      invoke GetLocalTime, addr @SystemTimeInitial
 
     .elseif wParam == IDM_TIMERHOUR
+      invoke GetLocalTime, addr @SystemTimeInitial
 
     .endif
 
@@ -170,7 +292,7 @@ _ProcWinMain proc hWnd, uMsg, wParam, lParam
     invoke DefWindowProc, hWnd, uMsg, wParam, lParam
   .endif
   ret
-_ProcWinMain endp
+_ProcWndMain endp
 
 
 
@@ -178,7 +300,6 @@ _WinMain proc
   local @stWndClass: WNDCLASSEX
   local @stMsg: MSG
   local @hMenu: HMENU
-  local @hMenuTimerChoice: HMENU
   local @hIcon: HICON
 
   invoke GetModuleHandle, NULL
@@ -194,7 +315,7 @@ _WinMain proc
   
   mov @stWndClass.cbSize, sizeof WNDCLASSEX
   mov @stWndClass.style, CS_HREDRAW or CS_VREDRAW
-  mov @stWndClass.lpfnWndProc, offset _ProcWinMain
+  mov @stWndClass.lpfnWndProc, offset _ProcWndMain
   mov @stWndClass.hbrBackground, COLOR_WINDOW + 1
   mov @stWndClass.lpszClassName, offset szClassName
 
@@ -202,17 +323,10 @@ _WinMain proc
   mov hMenu, eax
   invoke LoadMenu, hInstance, IDM_MAIN
   mov @hMenu, eax
-  invoke CreatePopupMenu
-  mov @hMenuTimerChoice, eax
 
   invoke AppendMenu, hMenu, MF_BYCOMMAND, IDM_NEWMEMO, offset szMenuNewMemo
-  invoke AppendMenu, hMenu, MF_POPUP, @hMenuTimerChoice, offset szMenuTimerChoice
   invoke AppendMenu, hMenu, 0, IDM_QUIT, offset szMenuQuit
 
-  invoke AppendMenu, @hMenuTimerChoice, MF_BYCOMMAND, IDM_TIMERCLOCK, offset szMenuTimerClock
-  invoke AppendMenu, @hMenuTimerChoice, MF_BYCOMMAND, IDM_TIMERSECOND, offset szMenuTimerSecond
-  invoke AppendMenu, @hMenuTimerChoice, MF_BYCOMMAND, IDM_TIMERMINUTE, offset szMenuTimerMinute
-  invoke AppendMenu, @hMenuTimerChoice, MF_BYCOMMAND, IDM_TIMERHOUR, offset szMenuTimerHour
   
   invoke RegisterClassEx, addr @stWndClass
   ; create a client edged window
@@ -224,9 +338,10 @@ _WinMain proc
                          0, 0, MEMO_SIZE, MEMO_SIZE, NULL,\
                          hMenu, hInstance, NULL
   mov hWinMain, eax ; mark hWinMain as the main window
+  
+  invoke SetTimer, hWinMain, 0, 100, _ProcTimer  ; call _ProcTimer every 100ms
   invoke UpdateWindow, hWinMain ; send WM_PRINT to hWinMain
-  ; set icon
-  invoke SendMessage, hWinMain, WM_SETICON, ICON_BIG, hIcon
+  invoke SendMessage, hWinMain, WM_SETICON, ICON_BIG, hIcon  ; set icon
   invoke ShowWindow, hWinMain, SW_SHOWNORMAL ; show window in a normal way
   ; main loop
   .while 1
@@ -242,7 +357,7 @@ _WinMain endp
 
 
 __main proc
-  call ImagesPreload
+  call _ImagesPreload
   invoke _WinMain
   invoke ExitProcess, 0
 __main endp

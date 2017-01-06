@@ -6,4 +6,4 @@ extrn hBitmapBgnd3: dword
 extrn hBitmapBgnd4: dword
 extrn hBitmapBgnd5: dword
 
-ImagesPreload proto
+_ImagesPreload proto
