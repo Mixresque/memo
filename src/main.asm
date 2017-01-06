@@ -33,9 +33,6 @@ SystemTimeAlarm SYSTEMTIME <?,?,?,?,?,?,?,?>
 szEditClass db 'editing', 0
 
 ; menu choice
-szClassName db 'MainWindow', 0
-szMenuNewMemo db '新建(&N)', 0
-szMenuQuit db '删除(&Q)', 0
 szMenuTimerChoice db '定时提醒', 0
 szMenuTimerClock db '某时刻', 0
 szMenuTimerSecond db '几秒后', 0
@@ -61,6 +58,7 @@ szMenuBshsizeSmall db '小笔刷', 0
 szMenuBshsizeMiddle db '普通笔刷', 0
 szMenuBshsizeBig db '大笔刷', 0
 
+szClassName db 'MainWindow', 0
 szCaptionMain db 'MEMO', 0
 
 .code
@@ -171,15 +169,22 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     ; initialize memo
     invoke BeginPaint, hWnd, addr @stPaintStruct
     mov @hDC, eax
+
     invoke CreateCompatibleDC, @hDC
     mov @hDCBgnd, eax ; Background DC
+
+    invoke SelectObject, @hDCBgnd, hBitmapAdd
+    invoke BitBlt, @hDC, 0, 0, 30, 30, @hDCBgnd, 0, 0, SRCCOPY
+    invoke SelectObject, @hDCBgnd, hBitmapDrag
+    invoke BitBlt, @hDC, 30, 0, MEMO_SIZE, 30, @hDCBgnd, 0, 0, SRCCOPY
+    invoke SelectObject, @hDCBgnd, hBitmapDelete
+    mov eax, MEMO_SIZE
+    sub eax, 34
+    invoke BitBlt, @hDC, eax, 0, 30, 30, @hDCBgnd, 0, 0, SRCCOPY
     invoke SelectObject, @hDCBgnd, hBitmapBgnd
-    invoke BitBlt, @hDC, 0, 0, MEMO_SIZE, MEMO_SIZE, @hDCBgnd, 0, 0, SRCCOPY
-    invoke DeleteDC, @hDCBgnd
+    invoke BitBlt, @hDC, 0, 30, MEMO_SIZE, MEMO_SIZE, @hDCBgnd, 0, 0, SRCCOPY
     
-
-
-  
+    invoke DeleteDC, @hDCBgnd
 
   .elseif eax == WM_RBUTTONDOWN 
     ; right mouse button down, pop up a menu
@@ -189,7 +194,31 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     invoke TrackPopupMenu, @hPPMenu, TPM_LEFTALIGN, @stPosMouse.x, @stPosMouse.y, NULL, hWnd, NULL
 
   .elseif eax == WM_LBUTTONDOWN 
-    mov MOUSE_STATUS, 1
+    invoke GetCursorPos, addr @stPosMouse
+    invoke GetWindowRect, hWnd, addr @stRect
+    mov ecx, @stPosMouse.x
+    sub ecx, @stRect.left
+    mov edx, @stPosMouse.y
+    sub edx, @stRect.top
+    .if edx <= 30
+      mov eax, MEMO_SIZE
+      sub eax, 30
+      .if ecx >= eax
+        invoke SendMessage, hWnd, WM_COMMAND, IDM_DELETE, 0
+      .elseif ecx <= 30
+        invoke SendMessage,hWnd,WM_COMMAND,IDM_NEWMEMO,0
+      .else
+        invoke UpdateWindow,hWnd ;即时刷新 
+        invoke ReleaseCapture  
+        invoke SendMessage,hWnd,WM_NCLBUTTONDOWN,HTCAPTION,0
+      .endif
+    .else
+      mov MOUSE_STATUS, 1
+    .endif
+
+
+
+
 
   .elseif eax == WM_LBUTTONUP
   mov MOUSE_STATUS, 0
@@ -197,10 +226,15 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
   .elseif eax == WM_MOUSEMOVE
     ; left mouse button down, draw
     .if MOUSE_STATUS == 1
-      invoke GetCursorPos, addr @stPosMouse
       invoke GetWindowDC, hWnd
       mov @hDC, eax
-      invoke _Paint, @hDC, @stPosMouse.x, @stPosMouse.y
+      invoke GetCursorPos, addr @stPosMouse
+      invoke GetWindowRect, hWnd, addr @stRect
+      mov ecx, @stPosMouse.x
+      sub ecx, @stRect.left
+      mov edx, @stPosMouse.y
+      sub edx, @stRect.top
+      invoke _Paint, @hDC, ecx, edx
     .endif
 
 
@@ -208,21 +242,47 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
   .elseif eax == WM_COMMAND
     .if wParam == IDM_NEWMEMO
 
-    .elseif wParam == IDM_QUIT
+    .elseif wParam == IDM_DELETE
       invoke PostQuitMessage, 0
  
     .elseif wParam == IDM_MEMOSIZEMINI
       mov MEMO_SIZE, MEMO_SIZE_MINI
+      invoke GetWindowRect, hWnd, addr @stRect
+      invoke SetWindowPos, hWnd, HWND_TOP, @stRect.left, @stRect.top, MEMO_SIZE, MEMO_SIZE, SWP_SHOWWINDOW
+      invoke GetClientRect, hWnd, addr @stRect
+      invoke InvalidateRect, hWnd, addr @stRect, TRUE
+      invoke UpdateWindow, hWnd
     .elseif wParam == IDM_MEMOSIZESMALL
       mov MEMO_SIZE, MEMO_SIZE_SMALL
+      invoke GetWindowRect, hWnd, addr @stRect
+      invoke SetWindowPos, hWnd, HWND_TOP, @stRect.left, @stRect.top, MEMO_SIZE, MEMO_SIZE, SWP_SHOWWINDOW
+      invoke GetClientRect, hWnd, addr @stRect
+      invoke InvalidateRect, hWnd, addr @stRect, TRUE
+      invoke UpdateWindow, hWnd
     .elseif wParam == IDM_MEMOSIZEBIG
       mov MEMO_SIZE, MEMO_SIZE_BIG
+      invoke GetWindowRect, hWnd, addr @stRect
+      invoke SetWindowPos, hWnd, HWND_TOP, @stRect.left, @stRect.top, MEMO_SIZE, MEMO_SIZE, SWP_SHOWWINDOW
+      invoke GetClientRect, hWnd, addr @stRect
+      invoke InvalidateRect, hWnd, addr @stRect, TRUE
+      invoke UpdateWindow, hWnd
     .elseif wParam == IDM_MEMOSIZEGIANT
       mov MEMO_SIZE, MEMO_SIZE_GIANT
+      invoke GetWindowRect, hWnd, addr @stRect
+      invoke SetWindowPos, hWnd, HWND_TOP, @stRect.left, @stRect.top, MEMO_SIZE, MEMO_SIZE, SWP_SHOWWINDOW
+      invoke GetClientRect, hWnd, addr @stRect
+      invoke InvalidateRect, hWnd, addr @stRect, TRUE
+      invoke UpdateWindow, hWnd
 
     .elseif wParam == IDM_BGND1
       mov edx, hBitmapBgnd1
       mov hBitmapBgnd, edx
+      mov edx, hBitmapAdd1
+      mov hBitmapAdd, edx
+      mov edx, hBitmapDelete1
+      mov hBitmapDelete, edx
+      mov edx, hBitmapDrag1
+      mov hBitmapDrag, edx
       mov MEMO_BGND, MEMO_BGND_1
       invoke GetClientRect, hWnd, addr @stRect
       invoke InvalidateRect, hWnd, addr @stRect, TRUE
@@ -230,6 +290,12 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     .elseif wParam == IDM_BGND2
       mov edx, hBitmapBgnd2
       mov hBitmapBgnd, edx
+      mov edx, hBitmapAdd2
+      mov hBitmapAdd, edx
+      mov edx, hBitmapDelete2
+      mov hBitmapDelete, edx
+      mov edx, hBitmapDrag2
+      mov hBitmapDrag, edx
       mov MEMO_BGND, MEMO_BGND_2
       invoke GetClientRect, hWnd, addr @stRect
       invoke InvalidateRect, hWnd, addr @stRect, TRUE
@@ -237,6 +303,12 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     .elseif wParam == IDM_BGND3
       mov edx, hBitmapBgnd3
       mov hBitmapBgnd, edx
+      mov edx, hBitmapAdd3
+      mov hBitmapAdd, edx
+      mov edx, hBitmapDelete3
+      mov hBitmapDelete, edx
+      mov edx, hBitmapDrag3
+      mov hBitmapDrag, edx
       mov MEMO_BGND, MEMO_BGND_3
       invoke GetClientRect, hWnd, addr @stRect
       invoke InvalidateRect, hWnd, addr @stRect, TRUE
@@ -244,13 +316,25 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     .elseif wParam == IDM_BGND4
       mov edx, hBitmapBgnd4
       mov hBitmapBgnd, edx
+      mov edx, hBitmapAdd4
+      mov hBitmapAdd, edx
+      mov edx, hBitmapDelete4
+      mov hBitmapDelete, edx
+      mov edx, hBitmapDrag4
+      mov hBitmapDrag, edx
       mov MEMO_BGND, MEMO_BGND_4
       invoke GetClientRect, hWnd, addr @stRect
       invoke InvalidateRect, hWnd, addr @stRect, TRUE
       invoke UpdateWindow, hWnd
     .elseif wParam == IDM_BGND5
-      mov edx, hBitmapBgnd5
+      mov edx, hBitmapBgnd5 
       mov hBitmapBgnd, edx
+      mov edx, hBitmapAdd5
+      mov hBitmapAdd, edx
+      mov edx, hBitmapDelete5
+      mov hBitmapDelete, edx
+      mov edx, hBitmapDrag5
+      mov hBitmapDrag, edx
       mov MEMO_BGND, MEMO_BGND_5
       invoke GetClientRect, hWnd, addr @stRect
       invoke InvalidateRect, hWnd, addr @stRect, TRUE
@@ -299,7 +383,6 @@ _ProcWndMain endp
 _WinMain proc
   local @stWndClass: WNDCLASSEX
   local @stMsg: MSG
-  local @hMenu: HMENU
   local @hIcon: HICON
 
   invoke GetModuleHandle, NULL
@@ -318,21 +401,9 @@ _WinMain proc
   mov @stWndClass.lpfnWndProc, offset _ProcWndMain
   mov @stWndClass.hbrBackground, COLOR_WINDOW + 1
   mov @stWndClass.lpszClassName, offset szClassName
-
-  invoke CreateMenu
-  mov hMenu, eax
-  invoke LoadMenu, hInstance, IDM_MAIN
-  mov @hMenu, eax
-
-  invoke AppendMenu, hMenu, MF_BYCOMMAND, IDM_NEWMEMO, offset szMenuNewMemo
-  invoke AppendMenu, hMenu, 0, IDM_QUIT, offset szMenuQuit
-
   
   invoke RegisterClassEx, addr @stWndClass
   ; create a client edged window
-  ; whose class is 'szClassName',
-  ; and caption is 'szCaptionMain'
-  ;  
   invoke CreateWindowEx, WS_EX_CLIENTEDGE, addr szClassName,\
                          addr szCaptionMain, WS_SYSMENU or WS_POPUP,\
                          0, 0, MEMO_SIZE, MEMO_SIZE, NULL,\
