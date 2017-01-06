@@ -3,11 +3,17 @@ include <image.inc>
 include <paint.inc>
 include <timer.inc>
 
+
+
+
+
 public MEMO_SIZE
 public MEMO_BGND
 public BRUSH_TYPE
 public BRUSH_SIZE
 public ALARM_COUNT
+
+system proto c :dword
 
 _WinMain proto
 
@@ -20,6 +26,8 @@ BRUSH_TYPE dd BRUSH_BLACK    ; default brush type is black pen
 BRUSH_SIZE dd BRUSH_MIDDLE   ; default brush size is middle
 MOUSE_STATUS db 0 ; mouse status initialized as up
 ALARM_COUNT dd 1 ; timer never sounds when ALARM_COUNT equals 1
+sii STARTUPINFO <>
+pii PROCESS_INFORMATION <>
 
 .data?
 hInstance dd ?
@@ -32,7 +40,7 @@ OldWndProc dd ?
 .const
 
 
-szEditClass db 'editing', 0
+; szEditClass db 'editing', 0
 
 ; menu choice
 szMenuTimerChoice db '定时提醒', 0
@@ -62,6 +70,8 @@ szMenuBshsizeBig db '大笔刷', 0
 
 szClassName db 'MainWindow', 0
 szCaptionMain db 'MEMO', 0
+szAlarmPudding db 'msc\\pudding.wav', 0
+szFork db 'main.exe', 0
 
 .code
 
@@ -237,6 +247,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
 
   .elseif eax == WM_COMMAND
     .if wParam == IDM_NEWMEMO
+      invoke CreateProcess, addr szFork, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, addr sii, addr pii
 
     .elseif wParam == IDM_DELETE
       invoke PostQuitMessage, 0
@@ -352,6 +363,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
 
     .elseif wParam == IDM_TIMERCLOCK
       call _SetTimerClock
+      invoke PlaySound, addr szAlarmPudding, 0, SND_ASYNC or SND_NODEFAULT or SND_FILENAME
     .elseif wParam == IDM_TIMERSECOND
       mov @dTimer, 5
       invoke _SetTimerSecond, @dTimer

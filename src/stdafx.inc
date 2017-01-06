@@ -17,6 +17,9 @@ include debug.inc
 includelib debug.lib
 include comctl32.inc
 include	comdlg32.inc
+include winmm.inc
+includelib winmm.lib
+includelib msvcrt.lib
 
 
 MEMO_SIZE_MINI equ 100h  ; MEMO size as mini
