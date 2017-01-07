@@ -234,7 +234,6 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
         mov @hDCEdit, eax
         invoke GetWindowDC, hWnd
         mov @hDC, eax
-
         invoke CreateCompatibleDC, @hDC
         mov hDCTmp, eax
         invoke CreateCompatibleBitmap, @hDC, TEXT_SIZE_X, TEXT_SIZE_Y
