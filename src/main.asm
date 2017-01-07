@@ -3,10 +3,6 @@ include <image.inc>
 include <paint.inc>
 include <timer.inc>
 
-
-
-
-
 public MEMO_SIZE
 public MEMO_BGND
 public BRUSH_TYPE
@@ -31,8 +27,6 @@ bTextBufferStatus db 0
 sii STARTUPINFO <>
 pii PROCESS_INFORMATION <>
 dTextPos Position <0, 30>
-dTextPosx dd ?
-dTextPosy dd ?
 
 .data?
 hInstance dd ?
@@ -43,9 +37,6 @@ hWndEdit dd ?
 hDCTmp dd ?
 
 .const
-
-
-szEditClass db 'EDIT', 0
 
 ; menu choice
 szMenuTimerChoice db '定时提醒', 0
@@ -74,6 +65,7 @@ szMenuBshsizeMiddle db '普通笔刷', 0
 szMenuBshsizeBig db '大笔刷', 0
 
 szClassName db 'MainWindow', 0
+szEditClass db 'EDIT', 0
 szCaptionMain db 'MEMO', 0
 szFork db 'main.exe', 0
 
@@ -168,6 +160,9 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
   local @hDCTmp
   local @hDCEdit
   local @dTimer
+  local @bHour: byte
+  local @bMinute: byte
+  local @bSecond: byte
 
   mov eax, uMsg
   .if eax == WM_CREATE
@@ -195,7 +190,6 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
   .elseif eax == WM_RBUTTONDOWN 
     ; right mouse button down, pop up a menu
     
-  ; invoke SetLayeredWindowAttributes, hWndMain, 0, 120, LWA_ALPHA  
     invoke _CreatePPMenu
     mov @hPPMenu, eax
     invoke GetCursorPos, addr @stPosMouse
@@ -232,7 +226,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
           .else
             invoke GetWindowDC, hWndMain
             mov @hDC, eax
-            invoke TransparentBlt, @hDC, dTextPosx, dTextPosy, TEXT_SIZE_X, TEXT_SIZE_Y, hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, 0FFFFFFh
+            invoke TransparentBlt, @hDC, dTextPos.x, dTextPos.y, TEXT_SIZE_X, TEXT_SIZE_Y, hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, 0FFFFFFh
             invoke DeleteDC, hDCTmp
             mov bTextBufferStatus, 0
             mov bDrawOrText, 0
@@ -263,8 +257,8 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
         sub eax, @stRect.left
         mov ebx, @stPosMouse.y
         sub ebx, @stRect.top
-        mov dTextPosx, eax
-        mov dTextPosy, ebx
+        mov dTextPos.x, eax
+        mov dTextPos.y, ebx
         invoke CreateWindowEx, WS_EX_APPWINDOW, addr szEditClass, NULL, \
                 WS_CHILD+WS_VISIBLE+ES_MULTILINE, eax, ebx, TEXT_SIZE_X, TEXT_SIZE_Y, \
                   hWnd, NULL, hInstance, NULL
@@ -295,7 +289,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     .if wParam == IDM_TEXT
       invoke GetWindowDC, hWndMain
       mov @hDC, eax
-      invoke TransparentBlt, @hDC, dTextPosx, dTextPosy, TEXT_SIZE_X, TEXT_SIZE_Y, hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, 0FFFFFFh
+      invoke TransparentBlt, @hDC, dTextPos.x, dTextPos.y, TEXT_SIZE_X, TEXT_SIZE_Y, hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, 0FFFFFFh
       invoke DeleteDC, hDCTmp
     .elseif wParam == IDM_DELETE
       invoke PostQuitMessage, 0
@@ -412,15 +406,18 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
       mov BRUSH_SIZE, BRUSH_BIG
 
     .elseif wParam == IDM_TIMERCLOCK
-      call _SetTimerClock
+      mov @bHour, 2
+      mov @bMinute, 2
+      mov @bSecond, 0
+      invoke _SetTimerClock, @bHour, @bMinute, @bSecond
     .elseif wParam == IDM_TIMERSECOND
       mov @dTimer, 5
       invoke _SetTimerSecond, @dTimer
     .elseif wParam == IDM_TIMERMINUTE
-      mov @dTimer, 5
+      mov @dTimer, 1
       invoke _SetTimerMinute, @dTimer
     .elseif wParam == IDM_TIMERHOUR
-      mov @dTimer, 5
+      mov @dTimer, 1
       invoke _SetTimerHour, @dTimer
     .endif
 
@@ -457,12 +454,12 @@ _WinMain proc
   mov @stWndClass.lpszClassName, offset szClassName
   
   invoke RegisterClassEx, addr @stWndClass
-  ; create a client edged window
+  ; create a pop-up window with no edges
   invoke CreateWindowEx, WS_EX_APPWINDOW, addr szClassName, \
                          addr szCaptionMain, WS_POPUP, \
                          800, 190, MEMO_SIZE, MEMO_SIZE, NULL, \
                          hMenu, hInstance, NULL
-  mov hWndMain, eax ; mark hWndMain as the main window
+  mov hWndMain, eax ; sava main window handler in hWndMain
   
   invoke SetTimer, hWndMain, 0, 100, _ProcTimer  ; call _ProcTimer every 100ms
   invoke UpdateWindow, hWndMain ; send WM_PRINT to hWndMain

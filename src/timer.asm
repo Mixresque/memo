@@ -27,23 +27,26 @@ _ProcTimer proc hWnd, uMsg, idEvent, dwTime
   ret
 _ProcTimer endp
 
-_SetTimerClock proc
+_SetTimerClock proc uses eax ebx ecx edx bHour:byte, bMinute:byte, bSecond:byte
   local @stSystemTimeInitial: SYSTEMTIME
   invoke GetLocalTime, addr @stSystemTimeInitial
   xor eax, eax
   xor ecx, ecx
+  xor ebx, ebx
   xor edx, edx
-  mov al, 9  ; stSystemTimeRequired.wHour
-  mov cl, byte ptr @stSystemTimeInitial.wHour
+  mov al, bHour  ; stSystemTimeRequired.wHour
+  mov cx, word ptr @stSystemTimeInitial.wHour
   sub al, cl
   mov dx, 60
   mul dx
-  add eax, 36  ; stSystemTimeRequired.wMinute
-  mov cl, byte ptr @stSystemTimeInitial.wMinute
+  mov bl, bMinute  ; stSystemTimeRequired.wMinute
+  add eax, ebx
+  mov cx, word ptr @stSystemTimeInitial.wMinute
   sub eax, ecx
   mov dx, 60
   mul dx
-  add eax, 0  ; stSystemTimeRequired.wSecond
+  mov bl, bSecond  ; stSystemTimeRequired.wSecond
+  add eax, ebx
   shl eax, 1
   and eax, 0fffffffeh
   mov ALARM_COUNT, eax
@@ -71,7 +74,7 @@ _SetTimerMinute endp
 _SetTimerHour proc dHours
   mov eax, dHours ; stSystemTimeRequired.wHour
   mov edx, 360000
-  mul dx
+  mul edx
   shl eax, 1
   and eax, 0fffffffeh
   mov ALARM_COUNT, eax
