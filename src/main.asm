@@ -247,16 +247,14 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
       .endif
     .else
       .if bDrawOrText == 0
-        .if bTextBufferStatus == 1
-          invoke DeleteDC, hDCTmp
-          mov bTextBufferStatus, 0
-          mov bDrawOrText, 0
-        .else
           mov bMouseStatus, 1
-        .endif
       .elseif bDrawOrText == 2
         invoke DestroyWindow, hWndEdit
         mov bDrawOrText, 0
+        .if bTextBufferStatus == 1
+          invoke DeleteDC, hDCTmp
+          mov bTextBufferStatus, 0
+        .endif
       .else
         ; create text area
         invoke GetCursorPos, addr @stPosMouse
