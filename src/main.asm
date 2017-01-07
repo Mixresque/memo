@@ -41,9 +41,9 @@ hDCTmp dd ?
 ; menu choice
 szMenuTimerChoice db '定时提醒', 0
 szMenuTimerClock db '某时刻', 0
-szMenuTimerSecond db '几秒后', 0
-szMenuTimerMinute db '几分钟后', 0
-szMenuTimerHour db '几小时后', 0
+szMenuTimerSecond db '5 秒后', 0
+szMenuTimerMinute db '10 分钟后', 0
+szMenuTimerHour db '1 小时后', 0
 szMenuMemosize db '便签大小', 0
 szMenuBgnd db '背景颜色', 0
 szMenuBrush db '笔刷类型', 0
@@ -125,30 +125,6 @@ _CreatePPMenu proc
   ret  
 _CreatePPMenu endp  
 
-_ProcWndEdit proc hWnd, uMsg, wParam, lParam
-  ; local @stPaintStruct: PAINTSTRUCT
-  ; local @hDC
-  ; local @hDCTmp
-  ; .if uMsg == WM_CREATE
-  ;   invoke BeginPaint, hWnd, addr @stPaintStruct
-  ;   mov @hDC, eax
-  ;   invoke CreateCompatibleDC, @hDC
-  ;   mov @hDCTmp, eax ; Background DC
-  ;   invoke SelectObject, @hDCTmp, hBitmapBgnd
-  ;   mov eax, MEMO_SIZE
-  ;   sub eax, 30
-  ;   invoke BitBlt, @hDC, 0, 0, MEMO_SIZE, eax, @hDCTmp, 0, 0, SRCCOPY
-  ;   invoke DeleteDC, @hDCTmp
-  ; .endif
-
-  ;    .if uMsg == WM_DESTROY
-
-  ;    .endif
-  ; xor eax, eax
-  ; ret
-_ProcWndEdit endp
-
-
 _ProcWndMain proc hWnd, uMsg, wParam, lParam
   local @stPaintStruct: PAINTSTRUCT
   local @stPosMouse: POINT  
@@ -173,16 +149,18 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     mov @hDC, eax
     invoke CreateCompatibleDC, @hDC
     mov @hDCTmp, eax
-    invoke SelectObject, @hDCTmp, hBitmapAdd
+    ; draw menu
+    invoke SelectObject, @hDCTmp, hBitmapAdd  ; button add
     invoke BitBlt, @hDC, 0, 0, 30, 30, @hDCTmp, 0, 0, SRCCOPY
-    invoke SelectObject, @hDCTmp, hBitmapDrag
+    invoke SelectObject, @hDCTmp, hBitmapDrag ; menu body
     invoke BitBlt, @hDC, 30, 0, MEMO_SIZE, 30, @hDCTmp, 0, 0, SRCCOPY
-    invoke SelectObject, @hDCTmp, hBitmapText
+    invoke SelectObject, @hDCTmp, hBitmapText ; button T
     invoke TransparentBlt, @hDC, 30, 0, 30, 30, @hDCTmp, 0, 0, 30, 30, 0FFFFFFh
-    invoke SelectObject, @hDCTmp, hBitmapDelete
+    invoke SelectObject, @hDCTmp, hBitmapDelete ; button bin
     mov eax, MEMO_SIZE
     sub eax, 30
     invoke BitBlt, @hDC, eax, 0, 30, 30, @hDCTmp, 0, 0, SRCCOPY
+    ; draw canvas
     invoke SelectObject, @hDCTmp, hBitmapBgnd
     invoke BitBlt, @hDC, 0, 30, MEMO_SIZE, MEMO_SIZE, @hDCTmp, 0, 0, SRCCOPY
     invoke DeleteDC, @hDCTmp
@@ -414,7 +392,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
       mov @dTimer, 5
       invoke _SetTimerSecond, @dTimer
     .elseif wParam == IDM_TIMERMINUTE
-      mov @dTimer, 1
+      mov @dTimer, 10
       invoke _SetTimerMinute, @dTimer
     .elseif wParam == IDM_TIMERHOUR
       mov @dTimer, 1
