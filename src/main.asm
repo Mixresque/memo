@@ -27,6 +27,7 @@ BRUSH_SIZE dd BRUSH_MIDDLE   ; default brush size is middle
 ALARM_COUNT dd 1 ; timer never sounds when ALARM_COUNT equals 1
 bMouseStatus db 0 ; mouse status initialized as up
 bDrawOrText db 0
+bTextBufferStatus db 0
 sii STARTUPINFO <>
 pii PROCESS_INFORMATION <>
 dTextPos Position <0, 30>
@@ -39,6 +40,7 @@ hWndMain dd ?
 hMenu dd ?
 hPPMenu dd ?
 hWndEdit dd ?
+hDCTmp dd ?
 
 .const
 
@@ -146,8 +148,12 @@ _ProcWndEdit proc hWnd, uMsg, wParam, lParam
   ;   invoke BitBlt, @hDC, 0, 0, MEMO_SIZE, eax, @hDCTmp, 0, 0, SRCCOPY
   ;   invoke DeleteDC, @hDCTmp
   ; .endif
-  xor eax, eax
-  ret
+
+  ;    .if uMsg == WM_DESTROY
+
+  ;    .endif
+  ; xor eax, eax
+  ; ret
 _ProcWndEdit endp
 
 
@@ -185,7 +191,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     invoke SelectObject, @hDCTmp, hBitmapBgnd
     invoke BitBlt, @hDC, 0, 30, MEMO_SIZE, MEMO_SIZE, @hDCTmp, 0, 0, SRCCOPY
     invoke DeleteDC, @hDCTmp
-
+    
   .elseif eax == WM_RBUTTONDOWN 
     ; right mouse button down, pop up a menu
     
@@ -219,8 +225,10 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     .else
       .if bDrawOrText == 0
         mov bMouseStatus, 1
-        ; invoke GetWindowDC, hWnd
-        ; mov @hDC, eax
+        .if bTextBufferStatus == 1
+          invoke SendMessage, hWnd, WM_COMMAND, IDM_TEXT, 0
+          mov bTextBufferStatus, 0
+        .endif
       .elseif bDrawOrText == 2
         invoke GetWindowDC, hWndEdit
         mov @hDCEdit, eax
@@ -228,18 +236,12 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
         mov @hDC, eax
 
         invoke CreateCompatibleDC, @hDC
-        mov @hDCTmp, eax
+        mov hDCTmp, eax
         invoke CreateCompatibleBitmap, @hDC, TEXT_SIZE_X, TEXT_SIZE_Y
-        invoke SelectObject, @hDCTmp, eax
-        invoke BitBlt, @hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, @hDCEdit, 0, 0, SRCCOPY
-        ; invoke TransparentBlt, @hDC, dTextPos.x, dTextPos.y, TEXT_SIZE_X, TEXT_SIZE_Y, @hDCEdit, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, 0FFFFFFh
+        invoke SelectObject, hDCTmp, eax
+        invoke BitBlt, hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, @hDCEdit, 0, 0, SRCCOPY
         invoke DestroyWindow, hWndEdit
-        invoke GetWindowDC, hWnd
-        mov @hDC, eax
-        mov eax, dTextPosy
-        add eax, 10
-        invoke BitBlt, @hDC, 0, 40, TEXT_SIZE_X, TEXT_SIZE_Y, @hDCTmp, 0, 0, SRCCOPY
-        invoke DeleteDC, @hDCTmp
+        mov bTextBufferStatus, 1
         mov bDrawOrText, 0
       .else
         ; create text area
@@ -278,12 +280,16 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     .endif
 
   .elseif eax == WM_COMMAND
-    .if wParam == IDM_NEWMEMO
-      invoke CreateProcess, addr szFork, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, addr sii, addr pii
-
+    .if wParam == IDM_TEXT
+      invoke GetWindowDC, hWndMain
+      mov @hDC, eax
+      invoke TransparentBlt, @hDC, dTextPosx, dTextPosy, TEXT_SIZE_X, TEXT_SIZE_Y, hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, 0FFFFFFh
+      invoke DeleteDC, hDCTmp
     .elseif wParam == IDM_DELETE
       invoke PostQuitMessage, 0
- 
+     .elseif wParam == IDM_NEWMEMO
+      invoke CreateProcess, addr szFork, NULL, NULL, NULL, FALSE, NULL, NULL, NULL, addr sii, addr pii
+
     .elseif wParam == IDM_MEMOSIZEMINI
       mov MEMO_SIZE, MEMO_SIZE_MINI
       invoke GetWindowRect, hWnd, addr @stRect
