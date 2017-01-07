@@ -216,7 +216,30 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
       .elseif ecx < 30
         invoke SendMessage, hWnd, WM_COMMAND, IDM_NEWMEMO, 0
       .elseif ecx < 60
-        mov bDrawOrText, 1
+        .if bDrawOrText == 2
+          .if bTextBufferStatus == 0
+            invoke GetWindowDC, hWndEdit
+            mov @hDCEdit, eax
+            invoke GetWindowDC, hWnd
+            mov @hDC, eax
+            invoke CreateCompatibleDC, @hDC
+            mov hDCTmp, eax
+            invoke CreateCompatibleBitmap, @hDC, TEXT_SIZE_X, TEXT_SIZE_Y
+            invoke SelectObject, hDCTmp, eax
+            invoke BitBlt, hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, @hDCEdit, 0, 0, SRCCOPY
+            invoke DestroyWindow, hWndEdit
+            mov bTextBufferStatus, 1
+          .else
+            invoke GetWindowDC, hWndMain
+            mov @hDC, eax
+            invoke TransparentBlt, @hDC, dTextPosx, dTextPosy, TEXT_SIZE_X, TEXT_SIZE_Y, hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, 0FFFFFFh
+            invoke DeleteDC, hDCTmp
+            mov bTextBufferStatus, 0
+            mov bDrawOrText, 0
+          .endif
+        .else
+          mov bDrawOrText, 1
+        .endif
       .else
         invoke UpdateWindow, hWnd ;¼´Ê±Ë¢ÐÂ 
         invoke ReleaseCapture  
@@ -224,23 +247,15 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
       .endif
     .else
       .if bDrawOrText == 0
-        mov bMouseStatus, 1
         .if bTextBufferStatus == 1
-          invoke SendMessage, hWnd, WM_COMMAND, IDM_TEXT, 0
+          invoke DeleteDC, hDCTmp
           mov bTextBufferStatus, 0
+          mov bDrawOrText, 0
+        .else
+          mov bMouseStatus, 1
         .endif
       .elseif bDrawOrText == 2
-        invoke GetWindowDC, hWndEdit
-        mov @hDCEdit, eax
-        invoke GetWindowDC, hWnd
-        mov @hDC, eax
-        invoke CreateCompatibleDC, @hDC
-        mov hDCTmp, eax
-        invoke CreateCompatibleBitmap, @hDC, TEXT_SIZE_X, TEXT_SIZE_Y
-        invoke SelectObject, hDCTmp, eax
-        invoke BitBlt, hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, @hDCEdit, 0, 0, SRCCOPY
         invoke DestroyWindow, hWndEdit
-        mov bTextBufferStatus, 1
         mov bDrawOrText, 0
       .else
         ; create text area
