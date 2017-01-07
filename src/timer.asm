@@ -33,17 +33,17 @@ _SetTimerClock proc
   xor eax, eax
   xor ecx, ecx
   xor edx, edx
-  mov al, 11  ; stSystemTimeRequired.wHour
+  mov al, 9  ; stSystemTimeRequired.wHour
   mov cl, byte ptr @stSystemTimeInitial.wHour
   sub al, cl
   mov dx, 60
   mul dx
-  add eax, 59  ; stSystemTimeRequired.wMinute
+  add eax, 36  ; stSystemTimeRequired.wMinute
   mov cl, byte ptr @stSystemTimeInitial.wMinute
   sub eax, ecx
   mov dx, 60
   mul dx
-  add eax, 59  ; stSystemTimeRequired.wSecond
+  add eax, 0  ; stSystemTimeRequired.wSecond
   shl eax, 1
   and eax, 0fffffffeh
   mov ALARM_COUNT, eax

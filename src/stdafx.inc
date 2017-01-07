@@ -21,7 +21,6 @@ include winmm.inc
 includelib winmm.lib
 includelib msvcrt.lib
 
-
 MEMO_SIZE_MINI equ 100h  ; MEMO size as mini
 MEMO_SIZE_SMALL equ 150h  ; MEMO size as small
 MEMO_SIZE_BIG equ 200h  ; MEMO size as big
@@ -32,6 +31,8 @@ MEMO_BGND_3 equ 3
 MEMO_BGND_4 equ 4
 MEMO_BGND_5 equ 5
 
+TEXT_SIZE_X equ 200
+TEXT_SIZE_Y equ 30
 
 BRUSH_ERASER equ 0
 BRUSH_BLACK equ 1
@@ -62,25 +63,7 @@ IDM_TIMERSECOND equ 2052h
 IDM_TIMERMINUTE equ 2053h
 IDM_TIMERHOUR equ 2054h
 
-
-
-
-;-----------------------------------------------------
-MAP_SIZE equ 0Dh
-
-ICO_BIG equ 1000h
-IDM_MAIN equ 2000h
-
 Position struct
-    x dd ?
-    y dd ?
+  x dword 0
+  y dword 0
 Position ends
-
-Braver struct
-    HP dd 1000
-    ATK dd 100
-    DEF dd 100
-    MON dd 0
-    pos Position <>
-    POSY dd 0
-Braver ends

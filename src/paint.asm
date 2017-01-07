@@ -9,8 +9,6 @@ public _Paint
 public _Repaint
 
 .data
-bCanvas db 592 dup( 592 dup( 0 ) )
-
 
 .code
 _Paint proc uses eax ebx ecx edx hDC:dword, dwX:dword, dwY:dword
@@ -39,28 +37,16 @@ _Paint proc uses eax ebx ecx edx hDC:dword, dwX:dword, dwY:dword
   mov edx, BRUSH_SIZE
   mov eax, dwX
   mov ebx, dwY
-  sub eax, edx
-  sub ebx, edx
+  add eax, edx
+  add ebx, edx
   add edx, edx
   inc edx
   mov ecx, edx
 
-  ; mov esi, offset bCanvas
-  ; mov edi, offset bCanvas
-  ; add esi, eax
-  ; push eax
-  ; push edx
-  ; mov dx, 592
-  ; mul dx
-  ; add edi, eax
-  ; pop edx
-  ; pop eax
-
-
-  .while ecx > 0
+  .while (ecx > 0) && (ebx > 30)
     push ecx
     mov ecx, edx
-    push ebx
+    push eax
     .while ecx > 0
       push eax
       push ebx
@@ -72,12 +58,12 @@ _Paint proc uses eax ebx ecx edx hDC:dword, dwX:dword, dwY:dword
       pop ecx
       pop ebx
       pop eax  
-      inc ebx
+      dec eax
       dec ecx
     .endw
-    pop ebx
+    pop eax
     pop ecx
-    inc eax
+    dec ebx
     dec ecx
   .endw
 
@@ -87,8 +73,6 @@ _Paint endp
 _Repaint proc hDC
   local @dwBrushColor
 
-
-  
 
   ret
 _Repaint endp

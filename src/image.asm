@@ -1,6 +1,7 @@
 include stdafx.inc
 
 public hIcon
+public hBitmapText
 public hBitmapBgnd
 public hBitmapBgnd1
 public hBitmapBgnd2
@@ -54,9 +55,11 @@ hBitmapDrag2 dd ?
 hBitmapDrag3 dd ?
 hBitmapDrag4 dd ?
 hBitmapDrag5 dd ?
+hBitmapText dd ?
 
 .const
 szIcon db 'img\\mysterious\\icon.ico', 0
+szBitmapText db 'img\\mysterious\\text.bmp', 0
 szBitmapBgnd1 db 'img\\background\\1.bmp', 0
 szBitmapBgnd2 db 'img\\background\\2.bmp', 0
 szBitmapBgnd3 db 'img\\background\\3.bmp', 0
@@ -132,6 +135,10 @@ _ImagesPreload proc
   mov hBitmapDrag4, eax
   invoke LoadImage, NULL, addr szBitmapDrag5, IMAGE_BITMAP, 532, 30, LR_LOADFROMFILE
   mov hBitmapDrag5, eax
+
+  
+  invoke LoadImage, NULL, addr szBitmapText, IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE
+  mov hBitmapText, eax
   invoke LoadImage, NULL, addr szIcon, IMAGE_ICON, 16, 16, LR_LOADFROMFILE
   mov hIcon, eax
   ret

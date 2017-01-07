@@ -24,10 +24,14 @@ MEMO_SIZE dd MEMO_SIZE_MINI  ; default memo size is mini
 MEMO_BGND dd MEMO_BGND_1     ; default memo background color is yellow
 BRUSH_TYPE dd BRUSH_BLACK    ; default brush type is black pen
 BRUSH_SIZE dd BRUSH_MIDDLE   ; default brush size is middle
-MOUSE_STATUS db 0 ; mouse status initialized as up
 ALARM_COUNT dd 1 ; timer never sounds when ALARM_COUNT equals 1
+bMouseStatus db 0 ; mouse status initialized as up
+bDrawOrText db 0
 sii STARTUPINFO <>
 pii PROCESS_INFORMATION <>
+dTextPos Position <0, 30>
+dTextPosx dd ?
+dTextPosy dd ?
 
 .data?
 hInstance dd ?
@@ -35,7 +39,6 @@ hWndMain dd ?
 hMenu dd ?
 hPPMenu dd ?
 hWndEdit dd ?
-OldWndProc dd ?
 
 .const
 
@@ -131,23 +134,21 @@ _CreatePPMenu endp
 _ProcWndEdit proc hWnd, uMsg, wParam, lParam
   ; local @stPaintStruct: PAINTSTRUCT
   ; local @hDC
-  ; local @hDCBgnd
+  ; local @hDCTmp
   ; .if uMsg == WM_CREATE
   ;   invoke BeginPaint, hWnd, addr @stPaintStruct
   ;   mov @hDC, eax
   ;   invoke CreateCompatibleDC, @hDC
-  ;   mov @hDCBgnd, eax ; Background DC
-  ;   invoke SelectObject, @hDCBgnd, hBitmapBgnd
+  ;   mov @hDCTmp, eax ; Background DC
+  ;   invoke SelectObject, @hDCTmp, hBitmapBgnd
   ;   mov eax, MEMO_SIZE
   ;   sub eax, 30
-  ;   invoke BitBlt, @hDC, 0, 0, MEMO_SIZE, eax, @hDCBgnd, 0, 0, SRCCOPY
-  ;   invoke DeleteDC, @hDCBgnd
+  ;   invoke BitBlt, @hDC, 0, 0, MEMO_SIZE, eax, @hDCTmp, 0, 0, SRCCOPY
+  ;   invoke DeleteDC, @hDCTmp
   ; .endif
   xor eax, eax
   ret
 _ProcWndEdit endp
-
-
 
 
 _ProcWndMain proc hWnd, uMsg, wParam, lParam
@@ -158,35 +159,37 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
   local @stRect: RECT
   local @hPPMenu
   local @hDC
-  local @hDCBgnd
+  local @hDCTmp
+  local @hDCEdit
   local @dTimer
 
   mov eax, uMsg
   .if eax == WM_CREATE
-    
+
   .elseif eax == WM_PAINT
     ; initialize memo
     invoke BeginPaint, hWnd, addr @stPaintStruct
     mov @hDC, eax
-
     invoke CreateCompatibleDC, @hDC
-    mov @hDCBgnd, eax
-
-    invoke SelectObject, @hDCBgnd, hBitmapAdd
-    invoke BitBlt, @hDC, 0, 0, 30, 30, @hDCBgnd, 0, 0, SRCCOPY
-    invoke SelectObject, @hDCBgnd, hBitmapDrag
-    invoke BitBlt, @hDC, 30, 0, MEMO_SIZE, 30, @hDCBgnd, 0, 0, SRCCOPY
-    invoke SelectObject, @hDCBgnd, hBitmapDelete
+    mov @hDCTmp, eax
+    invoke SelectObject, @hDCTmp, hBitmapAdd
+    invoke BitBlt, @hDC, 0, 0, 30, 30, @hDCTmp, 0, 0, SRCCOPY
+    invoke SelectObject, @hDCTmp, hBitmapDrag
+    invoke BitBlt, @hDC, 30, 0, MEMO_SIZE, 30, @hDCTmp, 0, 0, SRCCOPY
+    invoke SelectObject, @hDCTmp, hBitmapText
+    invoke TransparentBlt, @hDC, 30, 0, 30, 30, @hDCTmp, 0, 0, 30, 30, 0FFFFFFh
+    invoke SelectObject, @hDCTmp, hBitmapDelete
     mov eax, MEMO_SIZE
     sub eax, 30
-    invoke BitBlt, @hDC, eax, 0, 30, 30, @hDCBgnd, 0, 0, SRCCOPY
-    invoke SelectObject, @hDCBgnd, hBitmapBgnd
-    invoke BitBlt, @hDC, 0, 30, MEMO_SIZE, MEMO_SIZE, @hDCBgnd, 0, 0, SRCCOPY
-    
-    invoke DeleteDC, @hDCBgnd
+    invoke BitBlt, @hDC, eax, 0, 30, 30, @hDCTmp, 0, 0, SRCCOPY
+    invoke SelectObject, @hDCTmp, hBitmapBgnd
+    invoke BitBlt, @hDC, 0, 30, MEMO_SIZE, MEMO_SIZE, @hDCTmp, 0, 0, SRCCOPY
+    invoke DeleteDC, @hDCTmp
 
   .elseif eax == WM_RBUTTONDOWN 
     ; right mouse button down, pop up a menu
+    
+  ; invoke SetLayeredWindowAttributes, hWndMain, 0, 120, LWA_ALPHA  
     invoke _CreatePPMenu
     mov @hPPMenu, eax
     invoke GetCursorPos, addr @stPosMouse
@@ -207,32 +210,62 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
       .elseif ecx < 30
         invoke SendMessage, hWnd, WM_COMMAND, IDM_NEWMEMO, 0
       .elseif ecx < 60
-        ; create text area
-        invoke GetWindowRect, hWnd, addr @stRect
-        mov eax, MEMO_SIZE
-        sub eax, 20
-        mov ebx, @stRect.top
-        add ebx, 30
-        invoke CreateWindowEx, WS_EX_APPWINDOW, addr szEditClass, NULL, \
-                WS_CHILD+WS_VISIBLE+ES_MULTILINE, @stRect.left, ebx, MEMO_SIZE, eax, \
-                  hWnd, NULL, hInstance, NULL
-        mov hWndEdit, eax
-        invoke SetFocus, eax
+        mov bDrawOrText, 1
       .else
         invoke UpdateWindow, hWnd ;¼´Ê±Ë¢ÐÂ 
         invoke ReleaseCapture  
         invoke SendMessage, hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0
       .endif
     .else
-      mov MOUSE_STATUS, 1
+      .if bDrawOrText == 0
+        mov bMouseStatus, 1
+        ; invoke GetWindowDC, hWnd
+        ; mov @hDC, eax
+      .elseif bDrawOrText == 2
+        invoke GetWindowDC, hWndEdit
+        mov @hDCEdit, eax
+        invoke GetWindowDC, hWnd
+        mov @hDC, eax
+
+        invoke CreateCompatibleDC, @hDC
+        mov @hDCTmp, eax
+        invoke CreateCompatibleBitmap, @hDC, TEXT_SIZE_X, TEXT_SIZE_Y
+        invoke SelectObject, @hDCTmp, eax
+        invoke BitBlt, @hDCTmp, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, @hDCEdit, 0, 0, SRCCOPY
+        ; invoke TransparentBlt, @hDC, dTextPos.x, dTextPos.y, TEXT_SIZE_X, TEXT_SIZE_Y, @hDCEdit, 0, 0, TEXT_SIZE_X, TEXT_SIZE_Y, 0FFFFFFh
+        invoke DestroyWindow, hWndEdit
+        invoke GetWindowDC, hWnd
+        mov @hDC, eax
+        mov eax, dTextPosy
+        add eax, 10
+        invoke BitBlt, @hDC, 0, 40, TEXT_SIZE_X, TEXT_SIZE_Y, @hDCTmp, 0, 0, SRCCOPY
+        invoke DeleteDC, @hDCTmp
+        mov bDrawOrText, 0
+      .else
+        ; create text area
+        invoke GetCursorPos, addr @stPosMouse
+        invoke GetWindowRect, hWnd, addr @stRect
+        mov eax, @stPosMouse.x
+        sub eax, @stRect.left
+        mov ebx, @stPosMouse.y
+        sub ebx, @stRect.top
+        mov dTextPosx, eax
+        mov dTextPosy, ebx
+        invoke CreateWindowEx, WS_EX_APPWINDOW, addr szEditClass, NULL, \
+                WS_CHILD+WS_VISIBLE+ES_MULTILINE, eax, ebx, TEXT_SIZE_X, TEXT_SIZE_Y, \
+                  hWnd, NULL, hInstance, NULL
+        mov hWndEdit, eax
+        invoke SetFocus, hWndEdit
+        mov bDrawOrText, 2
+      .endif
     .endif
 
   .elseif eax == WM_LBUTTONUP
-  mov MOUSE_STATUS, 0
+    mov bMouseStatus, 0
 
   .elseif eax == WM_MOUSEMOVE
     ; left mouse button down, draw
-    .if MOUSE_STATUS == 1
+    .if bMouseStatus == 1   
       invoke GetWindowDC, hWnd
       mov @hDC, eax
       invoke GetCursorPos, addr @stPosMouse
@@ -383,8 +416,6 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
   ret
 _ProcWndMain endp
 
-
-
 _WinMain proc
   local @stWndClass: WNDCLASSEX
   local @stMsg: MSG
@@ -411,7 +442,7 @@ _WinMain proc
   ; create a client edged window
   invoke CreateWindowEx, WS_EX_APPWINDOW, addr szClassName, \
                          addr szCaptionMain, WS_POPUP, \
-                         0, 0, MEMO_SIZE, MEMO_SIZE, NULL, \
+                         800, 190, MEMO_SIZE, MEMO_SIZE, NULL, \
                          hMenu, hInstance, NULL
   mov hWndMain, eax ; mark hWndMain as the main window
   
@@ -428,9 +459,6 @@ _WinMain proc
   .endw
   ret
 _WinMain endp
-
-
-
 
 __main proc
   call _ImagesPreload

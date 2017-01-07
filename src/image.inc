@@ -1,4 +1,5 @@
 extrn hIcon: dword
+extrn hBitmapText: dword
 extrn hBitmapBgnd: dword
 extrn hBitmapBgnd1: dword
 extrn hBitmapBgnd2: dword
