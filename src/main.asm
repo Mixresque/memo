@@ -24,6 +24,7 @@ ALARM_COUNT dd 1 ; timer never sounds when ALARM_COUNT equals 1
 bMouseStatus db 0 ; mouse status initialized as up
 bDrawOrText db 0
 bTextBufferStatus db 0
+bTimerEditStatus db 0
 sii STARTUPINFO <>
 pii PROCESS_INFORMATION <>
 dTextPos Position <0, 30>
@@ -124,6 +125,18 @@ _CreatePPMenu proc
   pop eax  
   ret  
 _CreatePPMenu endp  
+
+ProcChar proc hWnd, uMsg, wParam, lParam
+   mov eax, wParam
+   mov bTimerEditStatus, 0
+   .if eax < 03AH
+    .if eax > 030H
+      sub eax, 030H
+      mov dTimer, eax
+    .endif
+   .endif
+   ret
+ProcChar endp
 
 _ProcWndEdit proc hWnd, uMsg, wParam, lParam
   ; local @stPaintStruct: PAINTSTRUCT
@@ -412,14 +425,20 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     ;   invoke _SetTimerClock, @bHour, @bMinute, @bSecond
     .elseif wParam == IDM_TIMERSECOND
       mov @dTimer, 5
+      mov bTimerEditStatus, 1
       invoke _SetTimerSecond, @dTimer
     .elseif wParam == IDM_TIMERMINUTE
       mov @dTimer, 1
+      mov bTimerEditStatus, 1
       invoke _SetTimerMinute, @dTimer
     .elseif wParam == IDM_TIMERHOUR
       mov @dTimer, 1
+      mov bTimerEditStatus, 1
       invoke _SetTimerHour, @dTimer
     .endif
+
+  .elseif eax == WM_CHAR
+    invoke _ProcCharDown, hWnd, uMsg, wParam, lParam
 
   .elseif eax == WM_CLOSE  
     invoke DestroyWindow, hWndMain  
