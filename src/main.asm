@@ -100,7 +100,7 @@ _CreatePPMenu proc
   invoke AppendMenu, @hPopMenu0, MF_POPUP, @hPopMenu4, offset szMenuBrush
   invoke AppendMenu, @hPopMenu0, MF_POPUP, @hPopMenu5, offset szMenuBshsize
 
-  invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERCLOCK, offset szMenuTimerClock
+  ; invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERCLOCK, offset szMenuTimerClock
   invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERSECOND, offset szMenuTimerSecond
   invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERMINUTE, offset szMenuTimerMinute
   invoke AppendMenu, @hPopMenu1, MF_BYCOMMAND, IDM_TIMERHOUR, offset szMenuTimerHour
@@ -405,11 +405,11 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
     .elseif wParam == IDM_BSHSIZEBIG
       mov BRUSH_SIZE, BRUSH_BIG
 
-    .elseif wParam == IDM_TIMERCLOCK
-      mov @bHour, 2
-      mov @bMinute, 2
-      mov @bSecond, 0
-      invoke _SetTimerClock, @bHour, @bMinute, @bSecond
+    ; .elseif wParam == IDM_TIMERCLOCK
+    ;   mov @bHour, 2
+    ;   mov @bMinute, 2
+    ;   mov @bSecond, 0
+    ;   invoke _SetTimerClock, @bHour, @bMinute, @bSecond
     .elseif wParam == IDM_TIMERSECOND
       mov @dTimer, 5
       invoke _SetTimerSecond, @dTimer
