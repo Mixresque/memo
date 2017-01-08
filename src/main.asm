@@ -213,7 +213,7 @@ _ProcWndMain proc hWnd, uMsg, wParam, lParam
           mov bDrawOrText, 1
         .endif
       .else
-        invoke UpdateWindow, hWnd ;¼´Ê±Ë¢ÐÂ 
+        invoke UpdateWindow, hWnd ; refresh
         invoke ReleaseCapture  
         invoke SendMessage, hWnd, WM_NCLBUTTONDOWN, HTCAPTION, 0
       .endif
