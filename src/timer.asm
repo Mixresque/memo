@@ -63,7 +63,7 @@ _SetTimerSecond endp
 
 _SetTimerMinute proc dMinutes
   mov eax, dMinutes ; stSystemTimeRequired.wMinute
-  mov edx, 6000
+  mov edx, 3000
   mul dx
   shl eax, 1
   and eax, 0fffffffeh
